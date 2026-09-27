@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { MovingManModel } from "../src/common/model/MovingManModel.js";
 import { TimeModel } from "../src/common/TimeModel.js";
 import MovingManConstants from "../src/MovingManConstants.js";
-import { MovingManModel } from "../src/moving-man/model/MovingManModel.js";
 import { describeDisposalLeaks, forceGC } from "./helpers/memoryLeak.js";
 
 const FIXED_DT: number = MovingManConstants.FIXED_DT;

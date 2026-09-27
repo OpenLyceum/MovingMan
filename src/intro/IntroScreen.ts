@@ -2,10 +2,10 @@ import { type EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import { Screen, type ScreenOptions } from "scenerystack/sim";
 import type { Tandem } from "scenerystack/tandem";
 import { createIntroIcon } from "../common/MovingManScreenIcons.js";
+import { MovingManModel } from "../common/model/MovingManModel.js";
+import { MovingManKeyboardHelpContent } from "../common/view/MovingManKeyboardHelpContent.js";
 import type { MovingManPreferencesModel } from "../preferences/MovingManPreferencesModel.js";
-import { MovingManModel } from "./model/MovingManModel.js";
 import { IntroScreenView } from "./view/IntroScreenView.js";
-import { MovingManKeyboardHelpContent } from "./view/MovingManKeyboardHelpContent.js";
 
 type IntroScreenOptions = ScreenOptions & { tandem: Tandem; preferences: MovingManPreferencesModel };
 

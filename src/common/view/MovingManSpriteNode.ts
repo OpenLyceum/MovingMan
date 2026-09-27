@@ -13,11 +13,11 @@ import { Shape } from "scenerystack/kite";
 import { Image, Node, Path, RichDragListener } from "scenerystack/scenery";
 import { ArrowNode } from "scenerystack/scenery-phet";
 import { Animation, Easing } from "scenerystack/twixt";
+import walkingImageUrl from "../../assets/images/man-left.gif";
+import standingImageUrl from "../../assets/images/man-standing.gif";
 import { StringManager } from "../../i18n/StringManager.js";
 import MovingManColors from "../../MovingManColors.js";
 import MovingManConstants from "../../MovingManConstants.js";
-import walkingImageUrl from "../images/man-left.gif";
-import standingImageUrl from "../images/man-standing.gif";
 import type { MovingManModel } from "../model/MovingManModel.js";
 import type { LinearTransform } from "./LinearTransform.js";
 

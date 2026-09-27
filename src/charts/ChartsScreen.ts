@@ -2,10 +2,10 @@ import { type EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import { Screen, type ScreenOptions } from "scenerystack/sim";
 import type { Tandem } from "scenerystack/tandem";
 import { createChartsIcon } from "../common/MovingManScreenIcons.js";
+import { MovingManModel } from "../common/model/MovingManModel.js";
+import { MovingManKeyboardHelpContent } from "../common/view/MovingManKeyboardHelpContent.js";
 import type { MovingManPreferencesModel } from "../preferences/MovingManPreferencesModel.js";
-import { MovingManModel } from "./model/MovingManModel.js";
 import { ChartsScreenView } from "./view/ChartsScreenView.js";
-import { MovingManKeyboardHelpContent } from "./view/MovingManKeyboardHelpContent.js";
 
 type ChartsScreenOptions = ScreenOptions & { tandem: Tandem; preferences: MovingManPreferencesModel };
 

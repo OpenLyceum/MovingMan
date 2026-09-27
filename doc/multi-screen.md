@@ -13,8 +13,8 @@ For pedagogy and architecture, see [model.md](./model.md) and
 
 | Order | UI name | Folder | Screen class | Icon factory |
 |---|---|---|---|---|
-| 1 | Introduction | `src/moving-man/` | `IntroScreen` | `createIntroIcon()` |
-| 2 | Charts | `src/moving-man/` | `ChartsScreen` | `createChartsIcon()` |
+| 1 | Introduction | `src/intro/` | `IntroScreen` | `createIntroIcon()` |
+| 2 | Charts | `src/charts/` | `ChartsScreen` | `createChartsIcon()` |
 
 ```
 main.ts
@@ -24,9 +24,10 @@ main.ts
                       / ChartsScreenView
 ```
 
-Both Screen classes live under `src/moving-man/` (shared model package) rather
-than separate top-level screen folders. Each screen creates its **own**
-`MovingManModel` instance — Intro disables recording via `noRecording: true`.
+Each screen folder holds its Screen and ScreenView; the model and every view
+component both screens use live in `src/common/model/` and `src/common/view/`.
+Each screen creates its **own** `MovingManModel` instance — Intro disables
+recording via `noRecording: true`.
 
 ---
 
@@ -36,14 +37,11 @@ than separate top-level screen folders. Each screen creates its **own**
 src/
 ├─ common/
 │   └─ MovingManScreenIcons.ts
-└─ moving-man/
-    ├─ IntroScreen.ts
-    ├─ ChartsScreen.ts
-    ├─ model/MovingManModel.ts
-    └─ view/
-        ├─ IntroScreenView.ts
-        ├─ ChartsScreenView.ts
-        └─ MovingManKeyboardHelpContent.ts
+│   ├─ model/MovingManModel.ts …
+│   └─ view/  PlayAreaNode.ts, ChartNode.ts, MovingManKeyboardHelpContent.ts …
+├─ intro/   IntroScreen.ts, view/IntroScreenView.ts
+├─ charts/  ChartsScreen.ts, view/ChartsScreenView.ts
+└─ assets/  images/, sounds/
 ```
 
 Icons live only in `src/common/MovingManScreenIcons.ts`.
@@ -75,7 +73,7 @@ const screens = [
 ```
 
 ```typescript
-// src/moving-man/IntroScreen.ts
+// src/intro/IntroScreen.ts
 import { createIntroIcon } from "../common/MovingManScreenIcons.js";
 
 optionize<IntroScreenOptions, EmptySelfOptions, ScreenOptions>()(
@@ -136,7 +134,7 @@ screen summaries when documenting Intro vs Charts interactions.
 ## Adding another screen
 
 1. Add a `screens` key in every locale; expose it from `getScreenNames()`.
-2. Add a `*Screen.ts` (and view) under `src/moving-man/` or a new folder.
+2. Add a `*Screen.ts` (and view) in a new screen folder (`src/<screen>/` with `view/`), reusing `src/common/`.
 3. Add `create…Icon()` to `MovingManScreenIcons.ts` and wire both icons in the
    Screen’s `optionize` defaults.
 4. Register in `main.ts` with `preferences`, `name`, tandem, and background.

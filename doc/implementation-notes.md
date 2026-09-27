@@ -14,17 +14,16 @@ src/
   MovingManColors.ts, MovingManNamespace.ts
   i18n/StringManager.ts, strings_*.json
   preferences/                                          query params + Preferences
-  moving-man/
-    IntroScreen.ts                                      model(noRecording: true) + IntroScreenView
-    ChartsScreen.ts                                     full model + ChartsScreenView
-    model/
+  intro/IntroScreen.ts, intro/view/IntroScreenView.ts  model(noRecording: true) + IntroScreenView
+  charts/ChartsScreen.ts, charts/view/ChartsScreenView.ts  full model + ChartsScreenView
+  assets/images/, assets/sounds/                       sprite frames, tree, wall/grunt sounds
+  common/model/
       MovingManModel.ts                                 TModel + ManContext; record/playback
       MovingMan.ts                                      1-D kinematics + motion strategies
       DataSeries.ts                                     rolling / time-limited chart buffers
       MotionStrategy.ts, functionPresets.ts             driving quantity + x(t) presets
       MovingManConstants.ts, motionMath.ts, binarySearch.ts
-    view/
-      IntroScreenView.ts, ChartsScreenView.ts           screen coordinators
+  common/view/
       PlayAreaNode.ts, MovingManSpriteNode.ts           track, walls, walking sprite
       ChartNode.ts, LinearTransform.ts                  bamboo charts + axis mapping
       VariableControl.ts, FunctionComboBox.ts, WallsCheckbox.ts
@@ -79,7 +78,7 @@ add/remove. Fleet memory-leak suite uses a minimal dispose pattern (see `tests/m
 
 `npm test` (vitest):
 
-- `tests/moving-man/model/MovingManModel.test.ts` — acceleration-mode integration, reset, wall
+- `tests/common/model/MovingManModel.test.ts` — acceleration-mode integration, reset, wall
   collision when enabled
 - `tests/memory-leak.test.ts` — WeakRef/GC regression suite
 

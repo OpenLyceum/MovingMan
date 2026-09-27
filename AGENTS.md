@@ -12,10 +12,10 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 
 | Area | Location |
 |---|---|
-| Screens | `src/moving-man/IntroScreen.ts`, `ChartsScreen.ts` |
-| Model | `model/MovingManModel.ts` (screen state + step), `MovingMan.ts` (kinematics + motion strategies), `DataSeries.ts` (time-series buffers), `MotionStrategy.ts`, `functionPresets.ts` (x(t) presets), `MovingManConstants.ts` |
+| Screens | `src/intro/IntroScreen.ts` + `view/IntroScreenView.ts`, `src/charts/ChartsScreen.ts` + `view/ChartsScreenView.ts` |
+| Model | `src/common/model/MovingManModel.ts` (screen state + step), `MovingMan.ts` (kinematics + motion strategies), `DataSeries.ts` (time-series buffers), `MotionStrategy.ts`, `functionPresets.ts` (x(t) presets), `MovingManConstants.ts` |
 | Numerics | `model/motionMath.ts` (centered derivatives), `model/binarySearch.ts` |
-| View | `view/IntroScreenView.ts`, `ChartsScreenView.ts`, `ChartNode.ts`, `MovingManSpriteNode.ts`, `PlayAreaNode.ts`, `MovingManScreenSummaryContent.ts` |
+| View | `src/common/view/ChartNode.ts`, `MovingManSpriteNode.ts`, `PlayAreaNode.ts`, `MovingManScreenSummaryContent.ts` |
 | Sounds | `view/MovingManSounds.ts` — wall collision thud + grunt |
 | Colors / strings | `MovingManColors.ts`, `MovingManNamespace.ts`, `src/i18n/StringManager.ts` |
 
@@ -83,7 +83,7 @@ Fleet-standard Vitest layout:
 
 Actual specs:
 
-- `tests/moving-man/model/MovingManModel.test.ts`
+- `tests/common/model/MovingManModel.test.ts`
 - `tests/memory-leak.test.ts`
 
 Run `npm test`. CI runs the suite when a `test` script is present.

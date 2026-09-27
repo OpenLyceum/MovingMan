@@ -14,11 +14,11 @@
 
 import type { Emitter } from "scenerystack/axon";
 import { phetAudioContext, SoundClip, soundManager, WrappedAudioBuffer } from "scenerystack/tambo";
-import gruntSound01 from "../sounds/grunt01.mp3";
-import gruntSound02 from "../sounds/grunt02.mp3";
-import gruntSound03 from "../sounds/grunt03.mp3";
-import gruntSound04 from "../sounds/grunt04.mp3";
-import thudSound from "../sounds/thud.mp3";
+import gruntSound01 from "../../assets/sounds/grunt01.mp3";
+import gruntSound02 from "../../assets/sounds/grunt02.mp3";
+import gruntSound03 from "../../assets/sounds/grunt03.mp3";
+import gruntSound04 from "../../assets/sounds/grunt04.mp3";
+import thudSound from "../../assets/sounds/thud.mp3";
 
 // Quieter than full scale so a wall hit isn't jarring.
 const OUTPUT_LEVEL = 0.6;

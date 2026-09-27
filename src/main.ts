@@ -21,10 +21,10 @@ import "./brand.js";
 
 import { onReadyToLaunch, PreferencesModel, Sim } from "scenerystack/sim";
 import { Tandem } from "scenerystack/tandem";
+import { ChartsScreen } from "./charts/ChartsScreen.js";
 import { StringManager } from "./i18n/StringManager.js";
+import { IntroScreen } from "./intro/IntroScreen.js";
 import MovingManColors from "./MovingManColors.js";
-import { ChartsScreen } from "./moving-man/ChartsScreen.js";
-import { IntroScreen } from "./moving-man/IntroScreen.js";
 import { MovingManPreferencesModel } from "./preferences/MovingManPreferencesModel.js";
 import { MovingManPreferencesNode } from "./preferences/MovingManPreferencesNode.js";
 

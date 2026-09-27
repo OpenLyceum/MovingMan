@@ -12,8 +12,8 @@ import { Shape } from "scenerystack/kite";
 import { Image, LinearGradient, Node, Path, Rectangle, type TColor } from "scenerystack/scenery";
 import { ArrowNode } from "scenerystack/scenery-phet";
 import { ScreenIcon } from "scenerystack/sim";
+import standingImageUrl from "../assets/images/man-standing.gif";
 import MovingManColors from "../MovingManColors.js";
-import standingImageUrl from "../moving-man/images/man-standing.gif";
 
 const W = 548;
 const H = 373;
