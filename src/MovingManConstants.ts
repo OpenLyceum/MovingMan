@@ -7,6 +7,7 @@
  */
 
 import { Range } from "scenerystack/dot";
+import MovingManNamespace from "./MovingManNamespace.js";
 
 const MovingManConstants = {
   // The track runs from -HALF_CONTAINER_WIDTH to +HALF_CONTAINER_WIDTH meters.
@@ -78,6 +79,8 @@ const MovingManConstants = {
     { max: 10, step: 5 },
   ],
 } as const;
+
+MovingManNamespace.register("MovingManConstants", MovingManConstants);
 
 export default MovingManConstants;
 
