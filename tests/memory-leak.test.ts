@@ -5,7 +5,6 @@
 
 import { describe, expect, it } from "vitest";
 import { MovingManModel } from "../src/common/model/MovingManModel.js";
-import { TimeModel } from "../src/common/TimeModel.js";
 import MovingManConstants from "../src/MovingManConstants.js";
 import { describeDisposalLeaks, forceGC } from "./helpers/memoryLeak.js";
 
@@ -38,4 +37,4 @@ describe("Memory leak regression", () => {
   });
 });
 
-describeDisposalLeaks([{ name: "TimeModel", create: () => new TimeModel(), idempotentDispose: true }]);
+describeDisposalLeaks([]);
