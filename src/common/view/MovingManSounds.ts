@@ -8,8 +8,9 @@
  * The clips are created and registered with the global soundManager exactly once
  * (lazily, the first time any screen asks for the sounds). soundManager queues
  * generators added before it is initialized, so construction order is not a concern.
- * Audio is enabled via `audioOptions.supportsSound` in main.ts; users toggle it from
- * the navigation-bar sound button.
+ * Sound is on only when both `supportsSound` flags match: `src/init.ts` (playback
+ * starts unmuted) and `audioOptions.supportsSound` in main.ts (tambo initializes).
+ * Users toggle it from the navigation-bar sound button.
  */
 
 import type { Emitter } from "scenerystack/axon";

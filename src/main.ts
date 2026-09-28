@@ -67,7 +67,7 @@ onReadyToLaunch(() => {
         supportsDynamicLocale: true,
       },
       audioOptions: {
-        // Enables the navigation-bar sound toggle; collision sounds play through tambo.
+        // Initializes tambo and the Audio preferences. Pair with supportsSound in src/init.ts.
         supportsSound: true,
       },
     }),
