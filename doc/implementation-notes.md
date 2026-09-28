@@ -87,5 +87,5 @@ CI also runs `npm run lint && npm run check && npm run build`.
 ## Multi-screen simulations
 
 Intro and Charts share `MovingManScreenSummaryContent` and keyboard-help patterns. For fleet
-multi-screen conventions (StringManager getters, per-screen folders), see `doc/multi-screen.md` if
+multi-screen conventions (StringManager getters, per-screen folders), see [SceneryStackTemplate `doc/multi-screen.md`](https://github.com/OpenLyceum/SceneryStackTemplate/blob/main/doc/multi-screen.md) if
 adding a third screen.
