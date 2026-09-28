@@ -38,22 +38,26 @@ onReadyToLaunch(() => {
   const screens = [
     new IntroScreen({
       preferences: movingManPreferences,
+      // The screen name Property updates automatically when the locale changes
       name: screenNames.introStringProperty,
       tandem: Tandem.ROOT.createTandem("introScreen"),
       backgroundColorProperty: MovingManColors.backgroundColorProperty,
     }),
     new ChartsScreen({
       preferences: movingManPreferences,
+      // The screen name Property updates automatically when the locale changes
       name: screenNames.chartsStringProperty,
       tandem: Tandem.ROOT.createTandem("chartsScreen"),
       backgroundColorProperty: MovingManColors.backgroundColorProperty,
     }),
   ];
 
-  const simOptions = {
+  const sim = new Sim(stringManager.getTitleStringProperty(), screens, {
     preferencesModel: new PreferencesModel({
       visualOptions: {
+        // Adds a "Projector Mode" toggle in Preferences → Visual
         supportsProjectorMode: true,
+        // Enables keyboard-navigation highlight outlines
         supportsInteractiveHighlights: true,
       },
       simulationOptions: {
@@ -64,6 +68,7 @@ onReadyToLaunch(() => {
         ],
       },
       localizationOptions: {
+        // Adds a language picker in Preferences → Language
         supportsDynamicLocale: true,
       },
       audioOptions: {
@@ -71,8 +76,6 @@ onReadyToLaunch(() => {
         supportsSound: true,
       },
     }),
-  };
-
-  const sim = new Sim(stringManager.getTitleStringProperty(), screens, simOptions);
+  });
   sim.start();
 });
