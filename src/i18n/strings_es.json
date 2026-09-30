@@ -68,6 +68,13 @@
     "accelerationControl": "Aceleración",
     "wallsCheckbox": "Paredes"
   },
+  "keyboardHelp": {
+    "manHeading": "Hombre en movimiento",
+    "move": "Mover al hombre",
+    "moveDescription": "Mueve al hombre a la izquierda o a la derecha.",
+    "moveSlower": "Mover en pasos más pequeños",
+    "moveSlowerDescription": "Mantén Mayús para mover al hombre en pasos más pequeños."
+  },
   "preferences": {
     "title": "Simulación",
     "wallsEnabled": "Paredes activadas",

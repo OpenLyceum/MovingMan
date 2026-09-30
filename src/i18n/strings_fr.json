@@ -68,6 +68,13 @@
     "accelerationControl": "Accélération",
     "wallsCheckbox": "Murs"
   },
+  "keyboardHelp": {
+    "manHeading": "Homme en mouvement",
+    "move": "Déplacer l'homme",
+    "moveDescription": "Déplacez l'homme vers la gauche ou la droite.",
+    "moveSlower": "Déplacer par plus petits pas",
+    "moveSlowerDescription": "Maintenez Maj pour déplacer l'homme par plus petits pas."
+  },
   "preferences": {
     "title": "Simulation",
     "wallsEnabled": "Murs activés",

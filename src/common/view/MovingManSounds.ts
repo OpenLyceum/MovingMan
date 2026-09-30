@@ -14,6 +14,7 @@
  */
 
 import type { Emitter } from "scenerystack/axon";
+import { dotRandom } from "scenerystack/dot";
 import { phetAudioContext, SoundClip, soundManager, WrappedAudioBuffer } from "scenerystack/tambo";
 import gruntSound01 from "../../assets/sounds/grunt01.mp3";
 import gruntSound02 from "../../assets/sounds/grunt02.mp3";
@@ -70,7 +71,7 @@ function playCollision(): void {
     clip.stop();
   }
   thudClip?.play();
-  const grunt = gruntClips[Math.floor(Math.random() * gruntClips.length)];
+  const grunt = gruntClips[dotRandom.nextInt(gruntClips.length)];
   grunt?.play();
 }
 

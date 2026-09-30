@@ -68,6 +68,13 @@
     "accelerationControl": "Acceleration",
     "wallsCheckbox": "Walls"
   },
+  "keyboardHelp": {
+    "manHeading": "Moving man",
+    "move": "Move the man",
+    "moveDescription": "Move the man left or right.",
+    "moveSlower": "Move in smaller steps",
+    "moveSlowerDescription": "Hold Shift to move the man in smaller steps."
+  },
   "preferences": {
     "title": "Simulation",
     "wallsEnabled": "Walls Enabled",
