@@ -17,10 +17,15 @@ import MovingManConstants from "../../MovingManConstants.js";
 import type { MovingManPreferencesModel } from "../../preferences/MovingManPreferencesModel.js";
 import movingManQueryParameters from "../../preferences/movingManQueryParameters.js";
 import { closestIndex } from "./binarySearch.js";
+import { MotionStrategy } from "./MotionStrategy.js";
 import type { ManState } from "./MovingMan.js";
 import { type ManContext, MovingMan } from "./MovingMan.js";
 
 const { FIXED_DT, MAX_CATCHUP_STEPS, HALF_CONTAINER_WIDTH, MAX_TIME } = MovingManConstants;
+
+// Summing FIXED_DT drifts (480 slices of 1/24 s reach 20.00000000000002), so time limits
+// are compared with this tolerance and snapped to exactly when reached.
+const TIME_EPSILON = 1e-9;
 
 type HistoryRecord = { time: number; wallsEnabled: boolean; man: ManState };
 
@@ -60,10 +65,27 @@ export class MovingManModel implements TModel, ManContext {
     }
     this.movingMan = new MovingMan(this, this.noRecording);
 
+    // Changing a preference applies it right away; Reset All re-applies it as the default.
+    if (this.preferences) {
+      this.preferences.wallsEnabledProperty.lazyLink((enabled) => {
+        this.wallsEnabledProperty.value = enabled;
+      });
+      this.preferences.showVelocityVectorProperty.lazyLink((visible) => {
+        this.showVelocityVectorProperty.value = visible;
+      });
+      this.preferences.showAccelerationVectorProperty.lazyLink((visible) => {
+        this.showAccelerationVectorProperty.value = visible;
+      });
+    }
+
     // Choosing a preset function restarts the run from t = 0 so the whole trajectory
     // plays out. On the Charts screen we record it live; on Intro it just runs.
     this.movingMan.functionProperty.lazyLink((preset) => {
       if (preset) {
+        // A preset drives position, so make position the driving quantity (set directly:
+        // setPositionDriven() would clear the preset). Otherwise choosing "Off" later hands
+        // control back to a stale velocity/acceleration and the man runs off.
+        this.movingMan.motionStrategyProperty.value = MotionStrategy.POSITION;
         this.pause();
         if (!this.noRecording) {
           this.recordingProperty.value = true;
@@ -111,14 +133,14 @@ export class MovingManModel implements TModel, ManContext {
   }
 
   private stepInternal(delta: number): void {
-    this.time += delta;
-    this.timeProperty.value = this.time;
-
     if (this.recordingProperty.value) {
-      if (this.time > this.maxTime) {
+      // Check the limit before advancing, so stepping at the end is a no-op rather than
+      // pushing the clock past the recording.
+      if (this.time + delta > this.maxTime + TIME_EPSILON) {
         this.pause();
         return;
       }
+      this.advanceTime(delta, this.maxTime);
       this.movingMan.update(this.time, delta);
       this.recordState();
       this.furthestRecordedTimeProperty.value = this.time;
@@ -126,13 +148,27 @@ export class MovingManModel implements TModel, ManContext {
         this.pause();
       }
     } else if (!this.noRecording) {
+      const end = this.furthestRecordedTimeProperty.value;
+      if (this.time >= end - TIME_EPSILON) {
+        this.pause();
+        return;
+      }
+      this.advanceTime(delta, end);
       this.applyPlaybackState();
-      if (this.time >= this.furthestRecordedTimeProperty.value) {
+      if (this.time >= end) {
         this.pause();
       }
     } else {
+      this.advanceTime(delta, Number.POSITIVE_INFINITY);
       this.movingMan.update(this.time, delta);
     }
+  }
+
+  /** Advance the clock by delta, never past limit (snapping to it when within TIME_EPSILON). */
+  private advanceTime(delta: number, limit: number): void {
+    const next = this.time + delta;
+    this.time = next >= limit - TIME_EPSILON ? limit : next;
+    this.timeProperty.value = this.time;
   }
 
   // ── Recording / playback ──────────────────────────────────────────────────────
@@ -173,8 +209,14 @@ export class MovingManModel implements TModel, ManContext {
   // ── Public controls ───────────────────────────────────────────────────────────
 
   public play(): void {
-    if (!this.recordingProperty.value) {
+    if (this.playingBack()) {
       this.prepareForPlayback();
+      // Pressing play at the end of a recording replays it from the start.
+      if (this.time >= this.furthestRecordedTimeProperty.value - TIME_EPSILON) {
+        this.time = 0;
+        this.timeProperty.value = 0;
+        this.applyPlaybackState();
+      }
     }
     this.isPlayingProperty.value = true;
   }
@@ -227,6 +269,23 @@ export class MovingManModel implements TModel, ManContext {
     this.pause();
     this.clearHistoryAfter(this.time);
     this.recordingProperty.value = true;
+  }
+
+  /**
+   * The user took hold of the man (drag or slider). If that happens during playback, record
+   * over the rest of the run from the current cursor so the input isn't overwritten by the
+   * next playback frame. The play/pause state is kept, so paused users can still set up
+   * several initial values before pressing play.
+   */
+  public takeControlFromPlayback(): void {
+    if (!this.playingBack()) {
+      return;
+    }
+    const wasPlaying = this.isPlayingProperty.value;
+    this.record();
+    if (wasPlaying) {
+      this.play();
+    }
   }
 
   /** Switch into playback mode, rewinding to the start. */

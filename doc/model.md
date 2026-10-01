@@ -14,7 +14,7 @@ live motion.
 The sim has two screens with the same underlying physics but different presentation:
 
 - **Introduction** — a large play area with sliders, optional walls, and on-body vector arrows.
-  Motion runs live with short rolling graph windows; there is no long-term record/playback.
+  Motion runs live with no graphs and no record/playback; the clock simply keeps running.
 - **Charts** — a compact play area plus three synchronized **x**, **v**, and **a** versus **t**
   charts, with full record, pause, scrub, and playback-speed control.
 

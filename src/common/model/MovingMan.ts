@@ -426,6 +426,9 @@ export class MovingMan {
   }
 
   private hitsWall(x: number): boolean {
+    if (!this.context.wallsEnabled) {
+      return false;
+    }
     return -this.context.halfContainerWidth === x || this.context.halfContainerWidth === x;
   }
 

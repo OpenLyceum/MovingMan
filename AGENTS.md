@@ -4,7 +4,7 @@ Sim-specific context for AI assistants. General SceneryStack guidance: [OpenLyce
 
 ## Project
 
-SceneryStack port of the PhET Java *Moving Man* simulation. Two screens: **Introduction** (play area + sliders, live rolling graphs) and **Charts** (record/playback time-series graphs). The man moves in **1D**; you drive one kinematic quantity and the other two are derived.
+SceneryStack port of the PhET Java *Moving Man* simulation. Two screens: **Introduction** (play area + sliders, live motion, no graphs) and **Charts** (record/playback time-series graphs). The man moves in **1D**; you drive one kinematic quantity and the other two are derived.
 
 Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.md`.
 
@@ -40,6 +40,10 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 - **Fixed timestep accumulator.** `step(dt)` runs whole `FIXED_DT` slices (capped by `MAX_CATCHUP_STEPS`), gated on play state; recording vs. playback branches per slice. Introduction uses `noRecording: true` for live-only motion.
 - **Strategy determines derivation direction:** position-driven → velocity & acceleration by **differentiation** (`estimatedCenteredDerivatives` over the data series, with mid-point smoothing); velocity-driven → position by **integration**, acceleration by differentiation; acceleration-driven → velocity & position by integration (trapezoidal mid-velocity). `snapToZero` cleans tiny residuals so a parked man reads exactly 0.
 - **Walls:** `clampIfWalled` clamps the new position to the wall; on a collision the driving velocity is zeroed and `collideEmitter` fires → `MovingManSounds` thud.
+- **Time limit:** recording stops at exactly `MAX_TIME`; the clock never advances past it (or past the end of a recording in playback), and Play at the end of a recording replays from 0. Limits are compared with `TIME_EPSILON` because summed `FIXED_DT` drifts.
+- **User input during playback:** dragging the man or touching a slider calls `takeControlFromPlayback()`, which records over the rest of the run from the cursor. A drag also starts playing; a slider keeps the play/pause state so initial values can be set while paused.
+- **Presets:** choosing an x(t) preset sets the strategy to `position` (directly, since `setPositionDriven()` clears the preset).
+- **Preferences** apply live (lazy-linked to the model Properties) and are re-applied as defaults by Reset All.
 - `DataSeries` keeps parallel *model* and *graph* series per quantity (plus a `mouseDataSeries` for pointer drags) feeding the Charts screen.
 
 ## Accessibility
@@ -84,6 +88,7 @@ Fleet-standard Vitest layout:
 Actual specs:
 
 - `tests/common/model/MovingManModel.test.ts`
+- `tests/common/view/ChartNode.test.ts` (time-window follow)
 - `tests/memory-leak.test.ts`
 
 Run `npm test`. CI runs the suite when a `test` script is present.

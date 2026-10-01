@@ -8,7 +8,8 @@
  *
  * Picking up the slider, typing in the display, or tapping the arrow buttons all set
  * the corresponding driving quantity ("position-driven", etc.) on the man, matching
- * the behavior of the original simulation.
+ * the behavior of the original simulation. Doing so during playback switches to recording
+ * over the rest of the run (see MovingManModel.takeControlFromPlayback).
  */
 
 import type { Property, TReadOnlyProperty } from "scenerystack/axon";
@@ -212,6 +213,7 @@ export class VariableControl extends Panel {
           vectorVisibleProperty: null,
           vectorLabelStringProperty: null,
           applyUserChange: (value) => {
+            model.takeControlFromPlayback();
             man.setPositionDriven();
             man.setMousePosition(value);
             man.positionProperty.value = value;
@@ -227,6 +229,7 @@ export class VariableControl extends Panel {
           vectorVisibleProperty: model.showVelocityVectorProperty,
           vectorLabelStringProperty: v.showVelocityStringProperty,
           applyUserChange: (value) => {
+            model.takeControlFromPlayback();
             man.setVelocityDriven();
             man.velocityProperty.value = value;
           },
@@ -241,6 +244,7 @@ export class VariableControl extends Panel {
           vectorVisibleProperty: model.showAccelerationVectorProperty,
           vectorLabelStringProperty: v.showAccelerationStringProperty,
           applyUserChange: (value) => {
+            model.takeControlFromPlayback();
             man.setAccelerationDriven();
             man.accelerationProperty.value = value;
           },

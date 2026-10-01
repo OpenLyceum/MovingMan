@@ -8,7 +8,8 @@
  *
  * Both axes are zoomable. A per-chart value (y) zoom level and a shared time (x) zoom
  * level are passed in as integer NumberProperties; changing either rescales the
- * transform and the tick/grid spacing for that axis.
+ * transform and the tick/grid spacing for that axis. When zoomed in on time, the visible
+ * window slides to keep the playback cursor in view (see timeWindowStart).
  */
 
 import type { NumberProperty, TReadOnlyProperty } from "scenerystack/axon";
@@ -48,6 +49,18 @@ const GRID_LINE_WIDTH = 0.5;
 // Model-time scrub speed (seconds per view-pixel of keyboard drag).
 const SCRUB_PER_PX = 0.02;
 
+// Once the cursor passes this fraction of a zoomed-in time window, the window slides along with it.
+const TIME_FOLLOW_FRACTION = 0.9;
+
+/**
+ * Start of the visible time window of width `span` that keeps time `t` in view: fixed at 0
+ * until `t` passes TIME_FOLLOW_FRACTION of the window, then sliding with `t`, but never
+ * past the end of the recordable range [0, maxTime].
+ */
+export function timeWindowStart(t: number, span: number, maxTime: number): number {
+  return Math.max(0, Math.min(t - TIME_FOLLOW_FRACTION * span, maxTime - span));
+}
+
 /** One zoom level: axis extent `max` and tick/grid `step`, both in model units. */
 export type ZoomLevel = { readonly max: number; readonly step: number };
 
@@ -73,6 +86,8 @@ export class ChartNode extends Node {
   private readonly dataset: Vector2[] = [];
   private datasetSize = 0;
   private readonly timeProperty: TReadOnlyProperty<number>;
+  private readonly maxTime: number;
+  private timeSpan: number;
 
   public constructor(model: MovingManModel, timeProperty: TReadOnlyProperty<number>, options: ChartNodeOptions) {
     // This chart lives for the lifetime of the Charts screen and is never disposed; declare that
@@ -80,12 +95,14 @@ export class ChartNode extends Node {
     super({ isDisposable: false });
     this.series = options.series;
     this.timeProperty = timeProperty;
+    this.maxTime = model.maxTime;
 
     const valueLevel = options.valueLevels[options.valueZoomLevelProperty.value] ?? options.valueLevels[0];
     const timeLevel = options.timeLevels[options.timeZoomLevelProperty.value] ?? options.timeLevels[0];
     if (!(valueLevel && timeLevel)) {
       throw new Error("ChartNode requires at least one zoom level per axis");
     }
+    this.timeSpan = timeLevel.max;
 
     const plotWidth = options.width - LEFT_INSET - RIGHT_INSET;
     const plotHeight = options.height - TOP_INSET - BOTTOM_INSET;
@@ -188,14 +205,14 @@ export class ChartNode extends Node {
       yTickMarks.setSpacing(l.step);
       yTickLabels.setSpacing(l.step);
     });
-    // Time (x) zoom: rescale the x range and the spacing of the x grid/ticks, then
-    // reposition the cursor (which is derived from the transform).
+    // Time (x) zoom: change the window width and the spacing of the x grid/ticks, then
+    // reposition the window and cursor (both derived from the current time).
     options.timeZoomLevelProperty.link((level) => {
       const l = options.timeLevels[level];
       if (!l) {
         return;
       }
-      chartTransform.setModelXRange(new Range(0, l.max));
+      this.timeSpan = l.max;
       verticalGridLines.setSpacing(l.step);
       xTickMarks.setSpacing(l.step);
       xTickLabels.setSpacing(l.step);
@@ -262,9 +279,15 @@ export class ChartNode extends Node {
     this.refresh();
   }
 
-  /** Position the playback cursor at the current time under the current x transform. */
+  /** Slide the time window to keep the current time in view, then position the cursor at it. */
   private updateCursor(): void {
-    const x = this.chartTransform.modelToViewX(this.timeProperty.value);
+    const t = this.timeProperty.value;
+    const start = timeWindowStart(t, this.timeSpan, this.maxTime);
+    const xRange = this.chartTransform.modelXRange;
+    if (xRange.min !== start || xRange.max !== start + this.timeSpan) {
+      this.chartTransform.setModelXRange(new Range(start, start + this.timeSpan));
+    }
+    const x = this.chartTransform.modelToViewX(t);
     this.cursorLine.x1 = x;
     this.cursorLine.x2 = x;
   }

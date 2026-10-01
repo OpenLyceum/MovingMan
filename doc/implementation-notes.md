@@ -39,8 +39,9 @@ Data flows Model → View through AXON `Property` objects and `DataSeries` emitt
 ## Key design decisions
 
 - **Two models, one class.** `IntroScreen` passes `{ noRecording: true }`, which sets
-  `recordingProperty` false, uses `LimitedSizeDataSeries` for charts (short rolling windows),
-  and skips history scrubbing. `ChartsScreen` uses time-limited series (`SERIES_TIME_LIMIT` =
+  `recordingProperty` false, uses `LimitedSizeDataSeries` for the graph series (short rolling
+  windows that only feed the derivative readouts — the Intro screen draws no charts), and skips
+  history scrubbing. `ChartsScreen` uses time-limited series (`SERIES_TIME_LIMIT` =
   20 s) and full record/playback with `playbackSpeedProperty`.
 - **Fixed timestep accumulator.** `FIXED_DT = 1/24 s`, `MAX_CATCHUP_STEPS = 10`. Playback
   multiplies wall-clock dt by `playbackSpeedProperty` but each integration slice still uses
@@ -66,7 +67,8 @@ Data flows Model → View through AXON `Property` objects and `DataSeries` emitt
   `PlaybackControls`, shared vector toggles and preset picker.
 - **PlayAreaNode** — ruler, wall graphics, bounds.
 - **MovingManSpriteNode** — sprite sheet walking animation; lean on wall collision.
-- **ChartNode** — bamboo chart with zoom; reads `MovingMan.*GraphSeries`.
+- **ChartNode** — bamboo chart with zoom; reads `MovingMan.*GraphSeries`. When zoomed in on
+  time, the window slides to keep the cursor in view (`timeWindowStart`).
 - **MovingManSounds** — registers collision clips with sound manager.
 
 ## Disposal conventions

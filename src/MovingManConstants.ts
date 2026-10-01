@@ -56,7 +56,8 @@ const MovingManConstants = {
 
   // ── Chart zoom levels ────────────────────────────────────────────────────────
   // Each level is { max, step }: the axis extent and the tick/grid spacing at that
-  // zoom. Index 0 is fully zoomed out and matches the default ranges above.
+  // zoom. Index 0 is fully zoomed out and matches the control ranges above, so every
+  // value a slider can set is visible on the chart.
   // The shared time (x) axis runs 0..max; the value (y) axes run -max..+max.
   TIME_ZOOM_LEVELS: [
     { max: 20, step: 5 },
@@ -69,7 +70,7 @@ const MovingManConstants = {
     { max: 2, step: 1 },
   ],
   VELOCITY_ZOOM_LEVELS: [
-    { max: 12, step: 6 },
+    { max: 16, step: 8 },
     { max: 6, step: 3 },
     { max: 2, step: 1 },
   ],

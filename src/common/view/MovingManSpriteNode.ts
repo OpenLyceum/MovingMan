@@ -225,9 +225,7 @@ export class MovingManSpriteNode extends Node {
     // screen, starts recording over the current cursor and begins playing.
     const startPositionDrive = (): void => {
       man.setPositionDriven();
-      if (!(model.noRecording || model.recordingProperty.value)) {
-        model.record();
-      }
+      model.takeControlFromPlayback();
       if (!model.isPlayingProperty.value) {
         model.play();
       }
