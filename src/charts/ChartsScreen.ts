@@ -18,7 +18,7 @@ export class ChartsScreen extends Screen<MovingManModel, ChartsScreenView> {
         {
           homeScreenIcon: createChartsIcon(),
           navigationBarIcon: createChartsIcon(),
-          createKeyboardHelpNode: () => new MovingManKeyboardHelpContent(),
+          createKeyboardHelpNode: () => new MovingManKeyboardHelpContent({ includeChartCursor: true }),
         },
         options,
       ),

@@ -225,12 +225,16 @@ export class MovingManModel implements TModel, ManContext {
     this.isPlayingProperty.value = false;
   }
 
-  /** Pause and jump back to t = 0 (clearing history when recording). */
+  /**
+   * Pause and jump back to t = 0: clears the history when recording (or on the Intro screen,
+   * which has none), otherwise shows the first recorded frame. With a preset active, the
+   * man moves to x(0) so pressing play runs the preset again from its start.
+   */
   public rewind(): void {
     this.pause();
     this.time = 0;
     this.timeProperty.value = 0;
-    if (this.recordingProperty.value) {
+    if (this.recordingProperty.value || this.noRecording) {
       this.resetTimeAndHistory();
     } else {
       this.applyPlaybackState();
@@ -251,6 +255,12 @@ export class MovingManModel implements TModel, ManContext {
     this.timeProperty.value = 0;
     this.furthestRecordedTimeProperty.value = 0;
     this.movingMan.clear();
+
+    // A running preset starts over from x(0). Callers pause first, so this moves the man now.
+    const preset = this.movingMan.functionProperty.value;
+    if (preset) {
+      this.movingMan.setMousePosition(preset.evaluate(0));
+    }
   }
 
   private clearHistoryAfter(time: number): void {

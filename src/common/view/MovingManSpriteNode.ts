@@ -8,7 +8,8 @@
  * bonks a wall. Velocity (red) and acceleration (green) arrows float above his head.
  */
 
-import { Matrix3 } from "scenerystack/dot";
+import { PatternStringProperty } from "scenerystack/axon";
+import { Matrix3, toFixed } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Image, Node, Path, RichDragListener } from "scenerystack/scenery";
 import { ArrowNode } from "scenerystack/scenery-phet";
@@ -20,6 +21,7 @@ import MovingManColors from "../../MovingManColors.js";
 import MovingManConstants from "../../MovingManConstants.js";
 import type { MovingManModel } from "../model/MovingManModel.js";
 import type { LinearTransform } from "./LinearTransform.js";
+import { speakValueOnFocus } from "./speakValueOnFocus.js";
 
 const { VELOCITY_SCALE, ACCELERATION_SCALE } = MovingManConstants;
 
@@ -75,6 +77,7 @@ export class MovingManSpriteNode extends Node {
       tagName: "div",
       focusable: true,
       accessibleName: StringManager.getInstance().getA11yStrings().manAccessibleNameStringProperty,
+      accessibleHelpText: StringManager.getInstance().getA11yStrings().manHelpTextStringProperty,
     });
 
     const {
@@ -135,6 +138,16 @@ export class MovingManSpriteNode extends Node {
     man.positionProperty.link((position) => {
       this.x = transform.modelToViewX(position);
     });
+
+    // Screen readers hear where the man ended up after each keyboard move.
+    speakValueOnFocus(
+      this,
+      new PatternStringProperty(
+        StringManager.getInstance().getA11yStrings().manPositionResponseStringProperty,
+        { position: man.positionProperty },
+        { maps: { position: (position: number) => toFixed(position, 1) } },
+      ),
+    );
 
     // ── Facing + walk/stand frame selection ──────────────────────────────────────
     // facing is +1 to face left (native walking art) or -1 to face right (mirrored). The

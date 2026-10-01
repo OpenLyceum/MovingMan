@@ -12,7 +12,7 @@
  * window slides to keep the playback cursor in view (see timeWindowStart).
  */
 
-import type { NumberProperty, TReadOnlyProperty } from "scenerystack/axon";
+import { type NumberProperty, PatternStringProperty, type TReadOnlyProperty } from "scenerystack/axon";
 import {
   AxisLine,
   ChartRectangle,
@@ -22,7 +22,7 @@ import {
   TickLabelSet,
   TickMarkSet,
 } from "scenerystack/bamboo";
-import { Range, Vector2 } from "scenerystack/dot";
+import { Range, toFixed, Vector2 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Orientation } from "scenerystack/phet-core";
 import { KeyboardListener, Line, Node, RichDragListener, type TColor, Text } from "scenerystack/scenery";
@@ -31,6 +31,7 @@ import { StringManager } from "../../i18n/StringManager.js";
 import MovingManColors from "../../MovingManColors.js";
 import type { DataSeries } from "../model/DataSeries.js";
 import type { MovingManModel } from "../model/MovingManModel.js";
+import { speakValueOnFocus } from "./speakValueOnFocus.js";
 
 // Pixel insets reserved for tick labels around the plot rectangle.
 const LEFT_INSET = 36; // y-axis labels
@@ -233,6 +234,16 @@ export class ChartNode extends Node {
     const a11yStrings = StringManager.getInstance().getA11yStrings();
     chartRectangle.tagName = "div";
     chartRectangle.accessibleName = a11yStrings.timeCursorAccessibleNameStringProperty;
+    chartRectangle.accessibleHelpText = a11yStrings.timeCursorHelpTextStringProperty;
+    // Screen readers hear the cursor time after each keyboard scrub.
+    speakValueOnFocus(
+      chartRectangle,
+      new PatternStringProperty(
+        a11yStrings.timeCursorResponseStringProperty,
+        { time: timeProperty },
+        { maps: { time: (time: number) => toFixed(time, 1) } },
+      ),
+    );
     model.recordingProperty.link((recording) => {
       chartRectangle.focusable = !(recording || model.noRecording);
     });

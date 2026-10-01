@@ -66,14 +66,24 @@
     "positionControl": "Position",
     "velocityControl": "Vitesse",
     "accelerationControl": "Accélération",
-    "wallsCheckbox": "Murs"
+    "wallsCheckbox": "Murs",
+    "manHelpText": "Utilisez les flèches gauche et droite pour déplacer l'homme. Maintenez Maj pour de plus petits pas.",
+    "manPositionResponse": "{{position}} mètres",
+    "timeCursorHelpText": "En mode lecture, utilisez les flèches gauche et droite pour parcourir l'enregistrement. Début et Fin sautent à son début et à sa fin.",
+    "timeCursorResponse": "{{time}} secondes",
+    "restartClock": "Redémarrer l'horloge"
   },
   "keyboardHelp": {
     "manHeading": "Homme en mouvement",
     "move": "Déplacer l'homme",
     "moveDescription": "Déplacez l'homme vers la gauche ou la droite.",
     "moveSlower": "Déplacer par plus petits pas",
-    "moveSlowerDescription": "Maintenez Maj pour déplacer l'homme par plus petits pas."
+    "moveSlowerDescription": "Maintenez Maj pour déplacer l'homme par plus petits pas.",
+    "chartHeading": "Curseur temporel du graphique",
+    "scrub": "Parcourir l'enregistrement",
+    "scrubDescription": "En mode lecture, déplacez le curseur temporel du graphique vers la gauche ou la droite.",
+    "jumpToStartEnd": "Aller au début ou à la fin",
+    "jumpToStartEndDescription": "En mode lecture, placez le curseur temporel du graphique au début ou à la fin de l'enregistrement."
   },
   "preferences": {
     "title": "Simulation",

@@ -39,8 +39,6 @@ const MovingManConstants = {
   // points so the acceleration sample (read 2*RADIUS steps back) still has a full symmetric
   // window on both sides.
   SERIES_SIZE_LIMIT: 13,
-  // Time-limited graph series only retain points up to MAX_TIME seconds.
-  SERIES_TIME_LIMIT: 20,
   // How many recent frame times the man remembers (for the centered-derivative lookup).
   // Must exceed 2*DERIVATIVE_RADIUS so the acceleration sample time can be looked up.
   NUM_TIME_POINTS_TO_RECORD: 12,

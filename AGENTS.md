@@ -17,6 +17,7 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 | Numerics | `model/motionMath.ts` (centered derivatives), `model/binarySearch.ts` |
 | View | `src/common/view/ChartNode.ts`, `MovingManSpriteNode.ts`, `PlayAreaNode.ts`, `MovingManScreenSummaryContent.ts` |
 | Sounds | `view/MovingManSounds.ts` — wall collision thud + grunt |
+| A11y helpers | `view/speakValueOnFocus.ts` — announces the man's position / chart cursor time while focused |
 | Colors / strings | `MovingManColors.ts`, `MovingManNamespace.ts`, `src/i18n/StringManager.ts` |
 
 ## Model
@@ -42,7 +43,7 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 - **Walls:** `clampIfWalled` clamps the new position to the wall; on a collision the driving velocity is zeroed and `collideEmitter` fires → `MovingManSounds` thud.
 - **Time limit:** recording stops at exactly `MAX_TIME`; the clock never advances past it (or past the end of a recording in playback), and Play at the end of a recording replays from 0. Limits are compared with `TIME_EPSILON` because summed `FIXED_DT` drifts.
 - **User input during playback:** dragging the man or touching a slider calls `takeControlFromPlayback()`, which records over the rest of the run from the cursor. A drag also starts playing; a slider keeps the play/pause state so initial values can be set while paused.
-- **Presets:** choosing an x(t) preset sets the strategy to `position` (directly, since `setPositionDriven()` clears the preset).
+- **Presets:** choosing an x(t) preset sets the strategy to `position` (directly, since `setPositionDriven()` clears the preset). Rewind (the Intro restart button, the Charts rewind button) restarts the clock and moves the man to x(0), so a preset can be replayed without re-picking it.
 - **Preferences** apply live (lazy-linked to the model Properties) and are re-applied as defaults by Reset All.
 - `DataSeries` keeps parallel *model* and *graph* series per quantity (plus a `mouseDataSeries` for pointer drags) feeding the Charts screen.
 
@@ -51,7 +52,9 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 Follows the shared [OpenLyceum accessibility convention](https://github.com/OpenLyceum/Baton/blob/main/ACCESSIBILITY.md).
 Both screens register the shared `MovingManScreenSummaryContent` (live current-details: the man's
 position/velocity/acceleration + playback state) via the `screenSummaryContent` super-option, and
-order the PDOM through `pdomPlayAreaNode`/`pdomControlAreaNode`. A11y strings live under `a11y` in
+order the PDOM through `pdomPlayAreaNode`/`pdomControlAreaNode`. The draggable man and the chart
+time cursor have help text and speak their value (position / time) after keyboard moves via
+`speakValueOnFocus`; the Charts keyboard-help dialog documents cursor scrubbing (arrows, Home/End). A11y strings live under `a11y` in
 each locale JSON, via `StringManager.getA11yStrings()`.
 
 ## Compliance carve-outs

@@ -7,6 +7,8 @@
  * MoveDraggableItemsKeyboardHelpSection also documents up/down and W/S, which
  * that listener does not bind, so the man section uses the left/right key
  * strings KeyboardDragListener actually registers. No second listener is added.
+ * The Charts screen adds a section for the graph time cursor (ChartNode): left/right
+ * scrub through the recording, Home/End jump to its start and end.
  */
 
 import { HotkeyData } from "scenerystack/scenery";
@@ -38,8 +40,28 @@ const manSlowerHotkeyData = new HotkeyData({
   keyboardHelpDialogPDOMLabelStringProperty: keyboardHelpStrings.moveSlowerDescriptionStringProperty,
 });
 
+// Matches the chart's KeyboardDragListener (left/right) and KeyboardListener (home/end).
+const chartScrubHotkeyData = new HotkeyData({
+  keys: ["arrowLeft", "arrowRight", "a", "d"],
+  repoName: "movingman",
+  keyboardHelpDialogLabelStringProperty: keyboardHelpStrings.scrubStringProperty,
+  keyboardHelpDialogPDOMLabelStringProperty: keyboardHelpStrings.scrubDescriptionStringProperty,
+});
+
+const chartJumpHotkeyData = new HotkeyData({
+  keys: ["home", "end"],
+  repoName: "movingman",
+  keyboardHelpDialogLabelStringProperty: keyboardHelpStrings.jumpToStartEndStringProperty,
+  keyboardHelpDialogPDOMLabelStringProperty: keyboardHelpStrings.jumpToStartEndDescriptionStringProperty,
+});
+
+export type MovingManKeyboardHelpContentOptions = {
+  /** Include the graph time-cursor section (Charts screen only). */
+  includeChartCursor?: boolean;
+};
+
 export class MovingManKeyboardHelpContent extends TwoColumnKeyboardHelpContent {
-  public constructor() {
+  public constructor(options?: MovingManKeyboardHelpContentOptions) {
     const man = new KeyboardHelpSection(keyboardHelpStrings.manHeadingStringProperty, [
       KeyboardHelpSectionRow.fromHotkeyData(manMoveHotkeyData),
       KeyboardHelpSectionRow.fromHotkeyData(manSlowerHotkeyData),
@@ -47,7 +69,16 @@ export class MovingManKeyboardHelpContent extends TwoColumnKeyboardHelpContent {
 
     const leftSections = [new SliderControlsKeyboardHelpSection(), new ComboBoxKeyboardHelpSection(), man];
 
-    const rightSections = [new BasicActionsKeyboardHelpSection({ withCheckboxContent: true })];
+    const rightSections: KeyboardHelpSection[] = [];
+    if (options?.includeChartCursor) {
+      rightSections.push(
+        new KeyboardHelpSection(keyboardHelpStrings.chartHeadingStringProperty, [
+          KeyboardHelpSectionRow.fromHotkeyData(chartScrubHotkeyData),
+          KeyboardHelpSectionRow.fromHotkeyData(chartJumpHotkeyData),
+        ]),
+      );
+    }
+    rightSections.push(new BasicActionsKeyboardHelpSection({ withCheckboxContent: true }));
 
     super(leftSections, rightSections);
   }

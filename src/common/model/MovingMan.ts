@@ -23,8 +23,8 @@ const {
   NUMBER_MOUSE_POINTS_TO_AVERAGE,
   DERIVATIVE_RADIUS,
   FIXED_DT,
+  MAX_TIME,
   SERIES_SIZE_LIMIT,
-  SERIES_TIME_LIMIT,
   NUM_TIME_POINTS_TO_RECORD,
 } = MovingManConstants;
 
@@ -85,9 +85,10 @@ export class MovingMan {
       this.velocityGraphSeries = new LimitedSizeDataSeries(SERIES_SIZE_LIMIT);
       this.accelerationGraphSeries = new LimitedSizeDataSeries(SERIES_SIZE_LIMIT);
     } else {
-      this.positionGraphSeries = new LimitedTimeDataSeries(SERIES_TIME_LIMIT);
-      this.velocityGraphSeries = new LimitedTimeDataSeries(SERIES_TIME_LIMIT);
-      this.accelerationGraphSeries = new LimitedTimeDataSeries(SERIES_TIME_LIMIT);
+      // The graph series only retain points up to the recording limit.
+      this.positionGraphSeries = new LimitedTimeDataSeries(MAX_TIME);
+      this.velocityGraphSeries = new LimitedTimeDataSeries(MAX_TIME);
+      this.accelerationGraphSeries = new LimitedTimeDataSeries(MAX_TIME);
     }
   }
 

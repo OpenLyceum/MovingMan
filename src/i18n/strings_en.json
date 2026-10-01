@@ -66,14 +66,24 @@
     "positionControl": "Position",
     "velocityControl": "Velocity",
     "accelerationControl": "Acceleration",
-    "wallsCheckbox": "Walls"
+    "wallsCheckbox": "Walls",
+    "manHelpText": "Use the left and right arrow keys to move the man. Hold Shift for smaller steps.",
+    "manPositionResponse": "{{position}} meters",
+    "timeCursorHelpText": "In playback mode, use the left and right arrow keys to move through the recording. Home and End jump to its start and end.",
+    "timeCursorResponse": "{{time}} seconds",
+    "restartClock": "Restart the clock"
   },
   "keyboardHelp": {
     "manHeading": "Moving man",
     "move": "Move the man",
     "moveDescription": "Move the man left or right.",
     "moveSlower": "Move in smaller steps",
-    "moveSlowerDescription": "Hold Shift to move the man in smaller steps."
+    "moveSlowerDescription": "Hold Shift to move the man in smaller steps.",
+    "chartHeading": "Graph time cursor",
+    "scrub": "Move through the recording",
+    "scrubDescription": "In playback mode, move the graph time cursor left or right.",
+    "jumpToStartEnd": "Jump to start or end",
+    "jumpToStartEndDescription": "In playback mode, jump the graph time cursor to the start or end of the recording."
   },
   "preferences": {
     "title": "Simulation",

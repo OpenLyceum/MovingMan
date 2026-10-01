@@ -177,4 +177,23 @@ describe("MovingManModel", () => {
     expect(model.wallsEnabledProperty.value).toBe(false);
     expect(model.showVelocityVectorProperty.value).toBe(true);
   });
+
+  it("rewind on the Intro screen restarts the clock and a running preset", () => {
+    model = new MovingManModel({ noRecording: true });
+    const preset = FUNCTION_PRESETS[3] ?? null; // 7·cos(t), x(0) = 7
+    model.movingMan.functionProperty.value = preset;
+    for (let i = 0; i < 48; i++) {
+      model.step(FIXED_DT);
+    }
+    expect(model.timeProperty.value).toBeGreaterThan(1);
+
+    model.rewind();
+    expect(model.isPlayingProperty.value).toBe(false);
+    expect(model.timeProperty.value).toBe(0);
+    expect(model.movingMan.positionProperty.value).toBeCloseTo(7, 9);
+
+    model.play();
+    model.step(FIXED_DT);
+    expect(model.movingMan.positionProperty.value).toBeCloseTo(7 * Math.cos(FIXED_DT), 9);
+  });
 });

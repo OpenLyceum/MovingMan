@@ -66,14 +66,24 @@
     "positionControl": "Posición",
     "velocityControl": "Velocidad",
     "accelerationControl": "Aceleración",
-    "wallsCheckbox": "Paredes"
+    "wallsCheckbox": "Paredes",
+    "manHelpText": "Usa las flechas izquierda y derecha para mover al hombre. Mantén Mayús para pasos más pequeños.",
+    "manPositionResponse": "{{position}} metros",
+    "timeCursorHelpText": "En modo de reproducción, usa las flechas izquierda y derecha para recorrer la grabación. Inicio y Fin saltan a su comienzo y a su final.",
+    "timeCursorResponse": "{{time}} segundos",
+    "restartClock": "Reiniciar el reloj"
   },
   "keyboardHelp": {
     "manHeading": "Hombre en movimiento",
     "move": "Mover al hombre",
     "moveDescription": "Mueve al hombre a la izquierda o a la derecha.",
     "moveSlower": "Mover en pasos más pequeños",
-    "moveSlowerDescription": "Mantén Mayús para mover al hombre en pasos más pequeños."
+    "moveSlowerDescription": "Mantén Mayús para mover al hombre en pasos más pequeños.",
+    "chartHeading": "Cursor de tiempo del gráfico",
+    "scrub": "Recorrer la grabación",
+    "scrubDescription": "En modo de reproducción, mueve el cursor de tiempo del gráfico a la izquierda o a la derecha.",
+    "jumpToStartEnd": "Saltar al inicio o al final",
+    "jumpToStartEndDescription": "En modo de reproducción, salta el cursor de tiempo del gráfico al inicio o al final de la grabación."
   },
   "preferences": {
     "title": "Simulación",

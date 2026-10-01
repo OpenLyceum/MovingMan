@@ -3,8 +3,8 @@
  *
  * The "Introduction" screen. A play area with the man, walls, and ruler on top; a vertical
  * stack of three quantity controls (Position, Velocity, Acceleration) below, each with its
- * vector checkbox to the right; a small Walls checkbox; play/pause + Reset All controls
- * bottom-right.
+ * vector checkbox to the right; a small Walls checkbox; restart + play/pause + Reset All
+ * controls bottom-right.
  *
  * No recording / playback chrome — that's reserved for the Charts screen, matching the
  * original sim's simplification of the Intro tab.
@@ -12,7 +12,7 @@
 
 import { type EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import { AlignGroup, Node, VBox } from "scenerystack/scenery";
-import { PlayPauseButton, ResetAllButton } from "scenerystack/scenery-phet";
+import { PlayPauseButton, ResetAllButton, RestartButton } from "scenerystack/scenery-phet";
 import { ScreenView, type ScreenViewOptions } from "scenerystack/sim";
 import type { Tandem } from "scenerystack/tandem";
 import { FLAT_RESET_ALL_BUTTON_OPTIONS } from "../../common/MovingManButtonOptions.js";
@@ -34,6 +34,7 @@ const PLAY_AREA_HEIGHT = 300;
 const MAN_HEIGHT = 120;
 const CONTROL_SLIDER_WIDTH = 240;
 const PLAY_PAUSE_RADIUS = 28;
+const RESTART_RADIUS = 18;
 
 export type IntroScreenViewOptions = ScreenViewOptions & { tandem: Tandem };
 
@@ -99,6 +100,14 @@ export class IntroScreenView extends ScreenView {
       endPlayingAccessibleName: StringManager.getInstance().getA11yStrings().playPauseEndStringProperty,
     });
 
+    // Restart the clock at t = 0. With an x(t) preset active this replays the preset from its
+    // start (re-picking the same preset in the combo box can't, since the value is unchanged).
+    const restartButton = new RestartButton({
+      radius: RESTART_RADIUS,
+      listener: () => model.rewind(),
+      accessibleName: StringManager.getInstance().getA11yStrings().restartClockStringProperty,
+    });
+
     const resetAllButton = new ResetAllButton({
       ...FLAT_RESET_ALL_BUTTON_OPTIONS,
       listener: () => {
@@ -130,11 +139,15 @@ export class IntroScreenView extends ScreenView {
     playPauseButton.right = resetAllButton.left - 3 * MARGIN;
     playPauseButton.centerY = resetAllButton.centerY;
 
+    restartButton.right = playPauseButton.left - MARGIN;
+    restartButton.centerY = playPauseButton.centerY;
+
     this.children = [
       playArea,
       wallsCheckbox,
       controlsColumn,
       functionComboBox,
+      restartButton,
       playPauseButton,
       resetAllButton,
       comboListParent,
@@ -143,12 +156,13 @@ export class IntroScreenView extends ScreenView {
     // Explicit traversal order for keyboard/screen-reader users. ScreenView forbids setting
     // pdomOrder on itself, so route through the standard play-area and control-area sections:
     // the man is the simulation content; the quantity controls, wall toggle, function chooser,
-    // play/pause and Reset All are controls. (comboListParent is just the popup layer.)
+    // restart, play/pause and Reset All are controls. (comboListParent is just the popup layer.)
     this.pdomPlayAreaNode.pdomOrder = [playArea];
     this.pdomControlAreaNode.pdomOrder = [
       controlsColumn,
       wallsCheckbox,
       functionComboBox,
+      restartButton,
       playPauseButton,
       resetAllButton,
     ];
