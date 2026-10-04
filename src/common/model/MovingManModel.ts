@@ -78,6 +78,21 @@ export class MovingManModel implements TModel, ManContext {
       });
     }
 
+    // When walls are toggled on, immediately clamp the man if he is currently standing
+    // past the wall position so he doesn't remain outside the boundary.
+    this.wallsEnabledProperty.lazyLink((enabled) => {
+      if (enabled) {
+        const wallResult = this.movingMan.clampIfWalled(this.movingMan.positionProperty.value);
+        if (wallResult.collided) {
+          this.movingMan.positionProperty.value = wallResult.position;
+          this.movingMan.setMousePosition(wallResult.position);
+          if (this.movingMan.velocityDriven) {
+            this.movingMan.velocityProperty.value = 0;
+          }
+        }
+      }
+    });
+
     // Choosing a preset function restarts the run from t = 0 so the whole trajectory
     // plays out. On the Charts screen we record it live; on Intro it just runs.
     this.movingMan.functionProperty.lazyLink((preset) => {

@@ -207,4 +207,60 @@ describe("MovingManModel", () => {
     model.step(FIXED_DT);
     expect(model.movingMan.positionProperty.value).toBeCloseTo(7 * Math.cos(FIXED_DT), 9);
   });
+
+  it("velocity mode aligns acceleration timestamps with model time and keeps them monotonic", () => {
+    model = new MovingManModel();
+    model.movingMan.setVelocityDriven();
+    model.movingMan.velocityProperty.value = 3;
+    model.play();
+
+    for (let i = 0; i < 20; i++) {
+      model.step(FIXED_DT);
+    }
+
+    const accelSeries = model.movingMan.accelerationGraphSeries;
+    expect(accelSeries.size()).toBe(20);
+
+    const lastPoint = accelSeries.getLastPoint();
+    expect(lastPoint).not.toBeNull();
+    expect(lastPoint?.time).toBeCloseTo(model.timeProperty.value, 6);
+
+    // Timestamps must be strictly monotonically increasing.
+    for (let i = 1; i < accelSeries.size(); i++) {
+      const prev = accelSeries.getPoint(i - 1);
+      const curr = accelSeries.getPoint(i);
+      expect(curr!.time).toBeGreaterThan(prev!.time);
+    }
+  });
+
+  it("toggling walls on immediately clamps a man standing outside the walls", () => {
+    model = new MovingManModel({ noRecording: true });
+    model.wallsEnabledProperty.value = false;
+
+    model.movingMan.setVelocityDriven();
+    model.movingMan.positionProperty.value = HALF_CONTAINER_WIDTH + 3;
+    model.movingMan.velocityProperty.value = 2;
+    expect(model.movingMan.positionProperty.value).toBe(HALF_CONTAINER_WIDTH + 3);
+
+    // Toggling walls on must immediately clamp the position to the wall.
+    model.wallsEnabledProperty.value = true;
+    expect(model.movingMan.positionProperty.value).toBe(HALF_CONTAINER_WIDTH);
+    expect(model.movingMan.velocityProperty.value).toBe(0);
+  });
+
+  it("position mode derives velocity accurately via centered numerical differentiation", () => {
+    model = new MovingManModel({ noRecording: true });
+    const speed = 2.5; // m/s
+    model.movingMan.setPositionDriven();
+    model.play();
+
+    // Advance position uniformly for several steps to fill the derivative window.
+    for (let i = 1; i <= 20; i++) {
+      model.movingMan.setMousePosition(i * speed * FIXED_DT);
+      model.step(FIXED_DT);
+    }
+
+    // After warmup (>= 2 * DERIVATIVE_RADIUS = 6 steps), derived velocity should match steady speed.
+    expect(model.movingMan.velocityProperty.value).toBeCloseTo(speed, 1);
+  });
 });

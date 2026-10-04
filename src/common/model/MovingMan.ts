@@ -316,10 +316,10 @@ export class MovingMan {
     this.velocityGraphSeries.add(velocity, time);
 
     this.accelerationModelSeries.setData(this.estimatedCenteredDerivatives(this.velocityModelSeries));
-    const accelerationMid = this.accelerationModelSeries.getMidPoint();
-    if (accelerationMid) {
-      this.accelerationGraphSeries.addPoint(accelerationMid);
-    }
+    const accelerationSampleTime = this.getTimeNTimeStepsAgo(DERIVATIVE_RADIUS);
+    this.accelerationGraphSeries.addPoint(
+      this.getPointAtTime(this.accelerationModelSeries, accelerationSampleTime, time),
+    );
 
     const wallResult = this.clampIfWalled(this.positionProperty.value + velocity * delta);
     this.positionModelSeries.add(wallResult.position, time);

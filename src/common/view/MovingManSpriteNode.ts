@@ -171,6 +171,10 @@ export class MovingManSpriteNode extends Node {
       const walkingNow = Math.abs(velocity) > WALK_THRESHOLD;
       walking.visible = walkingNow;
       standing.visible = !walkingNow;
+      if (!walkingNow) {
+        figure.y = 0;
+        shadow.setScaleMagnitude(1, 1);
+      }
 
       MovingManSpriteNode.updateArrow(
         velocityArrow,
@@ -214,6 +218,10 @@ export class MovingManSpriteNode extends Node {
         // The shadow tightens as he springs up off the ground.
         const shadowScale = 1 - 0.4 * (rise / maxBob || 0);
         shadow.setScaleMagnitude(shadowScale, shadowScale);
+      } else {
+        walkPhase = 0;
+        figure.y = 0;
+        shadow.setScaleMagnitude(1, 1);
       }
     });
 
