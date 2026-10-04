@@ -24,6 +24,17 @@ describe("MovingManModel", () => {
     model.reset();
   });
 
+  it("rewinds playback to the actual initial position", () => {
+    model = new MovingManModel();
+    model.movingMan.setVelocityDriven();
+    model.movingMan.velocityProperty.value = 2;
+    const initial = model.movingMan.positionProperty.value;
+    model.play();
+    model.step(FIXED_DT);
+    model.stopRecording();
+    expect(model.movingMan.positionProperty.value).toBe(initial);
+  });
+
   it("integrates motion in acceleration mode", () => {
     model = new MovingManModel({ noRecording: true });
     const acceleration = 2;

@@ -140,6 +140,9 @@ export class MovingManModel implements TModel, ManContext {
         this.pause();
         return;
       }
+      if (this.history.length === 0) {
+        this.recordState();
+      }
       this.advanceTime(delta, this.maxTime);
       this.movingMan.update(this.time, delta);
       this.recordState();
