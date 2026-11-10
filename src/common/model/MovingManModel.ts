@@ -27,7 +27,9 @@ const { FIXED_DT, MAX_CATCHUP_STEPS, HALF_CONTAINER_WIDTH, MAX_TIME } = MovingMa
 // are compared with this tolerance and snapped to exactly when reached.
 const TIME_EPSILON = 1e-9;
 
-type HistoryRecord = { time: number; wallsEnabled: boolean; man: ManState };
+// The walls setting is deliberately not part of the record: it is a live user setting (also
+// exposed in Preferences), so playback shows the recorded motion without overwriting it.
+type HistoryRecord = { time: number; man: ManState };
 
 export type MovingManModelOptions = { noRecording?: boolean; preferences?: MovingManPreferencesModel };
 
@@ -37,6 +39,8 @@ export class MovingManModel implements TModel, ManContext {
   public readonly noRecording: boolean;
 
   public readonly wallsEnabledProperty = new BooleanProperty(movingManQueryParameters.wallsEnabled);
+  // Slider-driven motion bounces off the walls (v → −v) instead of stopping dead.
+  public readonly elasticWallsProperty = new BooleanProperty(movingManQueryParameters.elasticWalls);
   public readonly recordingProperty = new BooleanProperty(true);
   public readonly isPlayingProperty = new BooleanProperty(false);
   public readonly timeProperty = new NumberProperty(0, { units: secondsUnit });
@@ -49,7 +53,7 @@ export class MovingManModel implements TModel, ManContext {
 
   public readonly movingMan: MovingMan;
 
-  private readonly history: HistoryRecord[] = [];
+  private history: HistoryRecord[] = [];
   private historyTimes: number[] | null = null;
   private time = 0;
   private timeAccumulator = 0;
@@ -69,6 +73,9 @@ export class MovingManModel implements TModel, ManContext {
     if (this.preferences) {
       this.preferences.wallsEnabledProperty.lazyLink((enabled) => {
         this.wallsEnabledProperty.value = enabled;
+      });
+      this.preferences.elasticWallsProperty.lazyLink((elastic) => {
+        this.elasticWallsProperty.value = elastic;
       });
       this.preferences.showVelocityVectorProperty.lazyLink((visible) => {
         this.showVelocityVectorProperty.value = visible;
@@ -115,6 +122,10 @@ export class MovingManModel implements TModel, ManContext {
 
   public get wallsEnabled(): boolean {
     return this.wallsEnabledProperty.value;
+  }
+
+  public get elasticWalls(): boolean {
+    return this.elasticWallsProperty.value;
   }
 
   public isPaused(): boolean {
@@ -192,17 +203,12 @@ export class MovingManModel implements TModel, ManContext {
   // ── Recording / playback ──────────────────────────────────────────────────────
 
   private recordState(): void {
-    this.history.push({
-      time: this.time,
-      wallsEnabled: this.wallsEnabledProperty.value,
-      man: this.movingMan.getState(),
-    });
+    this.history.push({ time: this.time, man: this.movingMan.getState() });
   }
 
   private applyPlaybackState(): void {
     const record = this.findStateWithClosestTime(this.time);
     if (record) {
-      this.wallsEnabledProperty.value = record.wallsEnabled;
       this.movingMan.applyState(this.time, record.man);
     }
   }
@@ -282,11 +288,7 @@ export class MovingManModel implements TModel, ManContext {
   }
 
   private clearHistoryAfter(time: number): void {
-    for (let i = this.history.length - 1; i >= 0; i--) {
-      if ((this.history[i]?.time ?? 0) >= time) {
-        this.history.splice(i, 1);
-      }
-    }
+    this.history = this.history.filter((record) => record.time < time);
     this.historyTimes = null;
     this.furthestRecordedTimeProperty.value = time;
     this.movingMan.clearHistoryAfter(time);
@@ -347,6 +349,7 @@ export class MovingManModel implements TModel, ManContext {
       return;
     }
     this.wallsEnabledProperty.value = this.preferences.wallsEnabledProperty.value;
+    this.elasticWallsProperty.value = this.preferences.elasticWallsProperty.value;
     this.showVelocityVectorProperty.value = this.preferences.showVelocityVectorProperty.value;
     this.showAccelerationVectorProperty.value = this.preferences.showAccelerationVectorProperty.value;
   }
@@ -354,6 +357,7 @@ export class MovingManModel implements TModel, ManContext {
   public reset(): void {
     this.pause();
     this.wallsEnabledProperty.reset();
+    this.elasticWallsProperty.reset();
     this.recordingProperty.value = !this.noRecording;
     this.timeProperty.reset();
     this.furthestRecordedTimeProperty.reset();

@@ -28,8 +28,13 @@
       "sine": "7·sin(t)",
       "cosine": "7·cos(t)",
       "fastSine": "5·sin(2·t)",
-      "sqrtLinear": "√(20·t) − 10"
-    }
+      "sqrtLinear": "√(20·t) − 10",
+      "turnaround": "−2·t + 0.5·t²",
+      "exponential": "8 − 16·e^(−t/4)",
+      "dampedOscillation": "8·e^(−t/5)·cos(2·t)",
+      "cruiseBrakeStop": "Cruise, brake, stop"
+    },
+    "tangentLines": "Tangent Lines"
   },
   "playback": {
     "record": "Record",
@@ -71,7 +76,8 @@
     "manPositionResponse": "{{position}} meters",
     "timeCursorHelpText": "In playback mode, use the left and right arrow keys to move through the recording. Home and End jump to its start and end.",
     "timeCursorResponse": "{{time}} seconds",
-    "restartClock": "Restart the clock"
+    "restartClock": "Restart the clock",
+    "tangentLinesHelpText": "Show a line tangent to the position and velocity graphs at the time cursor. Its slope equals the value on the graph below."
   },
   "keyboardHelp": {
     "manHeading": "Moving man",
@@ -89,6 +95,7 @@
     "title": "Simulation",
     "wallsEnabled": "Walls Enabled",
     "showVelocityVector": "Show Velocity Vector",
-    "showAccelerationVector": "Show Acceleration Vector"
+    "showAccelerationVector": "Show Acceleration Vector",
+    "elasticWalls": "Elastic (Bouncy) Walls"
   }
 }

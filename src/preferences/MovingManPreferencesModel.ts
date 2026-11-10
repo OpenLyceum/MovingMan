@@ -13,6 +13,7 @@ import movingManQueryParameters from "./movingManQueryParameters.js";
 
 export class MovingManPreferencesModel {
   public readonly wallsEnabledProperty: BooleanProperty;
+  public readonly elasticWallsProperty: BooleanProperty;
   public readonly showVelocityVectorProperty: BooleanProperty;
   public readonly showAccelerationVectorProperty: BooleanProperty;
 
@@ -20,6 +21,10 @@ export class MovingManPreferencesModel {
     this.wallsEnabledProperty = new BooleanProperty(
       movingManQueryParameters.wallsEnabled,
       tandem ? { tandem: tandem.createTandem("wallsEnabledProperty") } : undefined,
+    );
+    this.elasticWallsProperty = new BooleanProperty(
+      movingManQueryParameters.elasticWalls,
+      tandem ? { tandem: tandem.createTandem("elasticWallsProperty") } : undefined,
     );
     this.showVelocityVectorProperty = new BooleanProperty(
       movingManQueryParameters.showVelocityVector,
@@ -33,6 +38,7 @@ export class MovingManPreferencesModel {
 
   public reset(): void {
     this.wallsEnabledProperty.reset();
+    this.elasticWallsProperty.reset();
     this.showVelocityVectorProperty.reset();
     this.showAccelerationVectorProperty.reset();
   }

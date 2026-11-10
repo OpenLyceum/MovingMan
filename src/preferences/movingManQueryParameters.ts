@@ -26,6 +26,13 @@ const movingManQueryParameters = QueryStringMachine.getAll({
     public: true,
   },
 
+  /** Whether the walls are elastic (slider-driven motion bounces instead of stopping). */
+  elasticWalls: {
+    type: "boolean",
+    defaultValue: false,
+    public: true,
+  },
+
   /** Whether the velocity vector is shown by default. */
   showVelocityVector: {
     type: "boolean",

@@ -9,6 +9,10 @@
 import { Range } from "scenerystack/dot";
 import MovingManNamespace from "./MovingManNamespace.js";
 
+// Half-window of the centered least-squares derivative (see DERIVATIVE_RADIUS below). Hoisted so
+// the buffer sizes that depend on it are derived rather than hand-maintained.
+const DERIVATIVE_RADIUS = 3;
+
 const MovingManConstants = {
   // The track runs from -HALF_CONTAINER_WIDTH to +HALF_CONTAINER_WIDTH meters.
   CONTAINER_WIDTH: 20,
@@ -30,18 +34,21 @@ const MovingManConstants = {
   // Half-window of the centered least-squares derivative. Widened from PhET's 1 to 3: a
   // 7-point regression rejects the high-frequency noise that double-differentiating a
   // hand-dragged position otherwise dumps into the acceleration, without faking the value
-  // (it is still a real least-squares slope). The trade-off is lag: each readout is sampled
+  // (it is still a real least-squares slope). The trade-off is lag: each derivative is taken
   // at its most-recent *fully centered* point — DERIVATIVE_RADIUS steps back for velocity,
-  // twice that for acceleration — so acceleration lags by ~2*RADIUS*dt ≈ 250 ms. Lower it
-  // for a snappier (but jitterier) acceleration; 1 restores exact PhET parity.
-  DERIVATIVE_RADIUS: 3,
-  // Fixed-size queues used to compute centered derivatives. Must hold at least 4*RADIUS+1
-  // points so the acceleration sample (read 2*RADIUS steps back) still has a full symmetric
-  // window on both sides.
-  SERIES_SIZE_LIMIT: 13,
+  // twice that for acceleration — so the readouts trail by ~RADIUS*dt ≈ 125 ms (v) and
+  // ~2*RADIUS*dt ≈ 250 ms (a). The chart points keep their true (centered) time, so the x, v
+  // and a graphs stay aligned; only the end of the v/a lines trails the cursor. Lower it for
+  // snappier (but jitterier) readouts; 1 restores exact PhET parity. The two buffer sizes
+  // below are derived from it, so any value >= 1 is safe.
+  DERIVATIVE_RADIUS,
+  // Fixed-size queues used to compute centered derivatives. Must hold 4*RADIUS+1 points so the
+  // acceleration sample (read 2*RADIUS steps back) still has a full symmetric window of
+  // velocity samples, each of which has its own full window of position samples.
+  SERIES_SIZE_LIMIT: 4 * DERIVATIVE_RADIUS + 1,
   // How many recent frame times the man remembers (for the centered-derivative lookup).
   // Must exceed 2*DERIVATIVE_RADIUS so the acceleration sample time can be looked up.
-  NUM_TIME_POINTS_TO_RECORD: 12,
+  NUM_TIME_POINTS_TO_RECORD: 4 * DERIVATIVE_RADIUS,
 
   // ── View arrow scaling (from PhET; tuned so the arrows read well on screen) ───
   VELOCITY_SCALE: 0.2,
