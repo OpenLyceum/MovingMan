@@ -31,6 +31,7 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 | `timeProperty` / `furthestRecordedTimeProperty` | model · `NumberProperty` (s) | playback cursor / recording length |
 | `playbackSpeedProperty` | model · `NumberProperty` | playback rate multiplier |
 | `wallsEnabledProperty` | model · `BooleanProperty` | bound the man between walls |
+| `elasticWallsProperty` | model · `BooleanProperty` (false) | slider-driven motion bounces (v → −v) instead of stopping |
 | `showVelocityVectorProperty` / `showAccelerationVectorProperty` | model · `BooleanProperty` | vector overlays |
 | `positionProperty` / `velocityProperty` / `accelerationProperty` | man · `NumberProperty` (m, m/s, m/s²) | kinematics |
 | `motionStrategyProperty` | man · `Property<MotionStrategy>` (default `position`) | which quantity drives motion |
@@ -39,12 +40,14 @@ Physics for educators: `doc/model.md`. Architecture: `doc/implementation-notes.m
 ### Stepping, derivation & walls
 
 - **Fixed timestep accumulator.** `step(dt)` runs whole `FIXED_DT` slices (capped by `MAX_CATCHUP_STEPS`), gated on play state; recording vs. playback branches per slice. Introduction uses `noRecording: true` for live-only motion.
-- **Strategy determines derivation direction:** position-driven → velocity & acceleration by **differentiation** (`estimatedCenteredDerivatives` over the data series, with mid-point smoothing); velocity-driven → position by **integration**, acceleration by differentiation; acceleration-driven → velocity & position by integration (trapezoidal mid-velocity). `snapToZero` cleans tiny residuals so a parked man reads exactly 0.
-- **Walls:** `clampIfWalled` clamps the new position to the wall; on a collision the driving velocity is zeroed and `collideEmitter` fires → `MovingManSounds` thud.
+- **Strategy determines derivation direction:** position-driven → velocity & acceleration by **differentiation** (`estimatedCenteredDerivatives` over the data series, with mid-point smoothing); velocity-driven → position by **integration**, acceleration by differentiation; acceleration-driven → velocity & position by integration (trapezoidal mid-velocity). x(t) presets use their **exact** `velocity`/`acceleration` functions. `snapToZero` cleans tiny residuals so a parked man reads exactly 0.
+- **Graph alignment:** differentiated points are plotted at their centered sample time (`addDerivativeSample`), not restamped to "now", so the x/v/a graphs line up; `addGraphPoint` keeps every graph series strictly increasing in time.
+- **Walls:** `clampIfWalled` clamps the new position to the wall. Slider-driven impacts go through `recordWallImpact` (no differentiated a-spike): inelastic zeroes v (acceleration mode also switches to velocity-driven); elastic (`elasticWallsProperty`) reverses v at the exact impact time (`bounceOffWall`). `collideEmitter` fires → `MovingManSounds` thud. Playback does not overwrite the walls toggle.
 - **Time limit:** recording stops at exactly `MAX_TIME`; the clock never advances past it (or past the end of a recording in playback), and Play at the end of a recording replays from 0. Limits are compared with `TIME_EPSILON` because summed `FIXED_DT` drifts.
 - **User input during playback:** dragging the man or touching a slider calls `takeControlFromPlayback()`, which records over the rest of the run from the cursor. A drag also starts playing; a slider keeps the play/pause state so initial values can be set while paused.
 - **Presets:** choosing an x(t) preset sets the strategy to `position` (directly, since `setPositionDriven()` clears the preset). Rewind (the Intro restart button, the Charts rewind button) restarts the clock and moves the man to x(0), so a preset can be replayed without re-picking it.
-- **Preferences** apply live (lazy-linked to the model Properties) and are re-applied as defaults by Reset All.
+- **Charts tangent lines:** a view-only toggle draws a dashed tangent at the cursor on the x and v charts (`ChartNode` `tangent` option / `tangentSegment`).
+- **Preferences** (walls, elastic walls, vector arrows) apply live (lazy-linked to the model Properties) and are re-applied as defaults by Reset All.
 - `DataSeries` keeps parallel *model* and *graph* series per quantity (plus a `mouseDataSeries` for pointer drags) feeding the Charts screen.
 
 ## Accessibility
@@ -75,7 +78,9 @@ each locale JSON, via `StringManager.getA11yStrings()`.
 Actual specs:
 
 - `tests/common/model/MovingManModel.test.ts`
-- `tests/common/view/ChartNode.test.ts` (time-window follow)
+- `tests/common/model/kinematics.test.ts` (closed-form physics, graph alignment, walls)
+- `tests/common/model/{motionMath,binarySearch,DataSeries,functionPresets}.test.ts`
+- `tests/common/view/ChartNode.test.ts` (time-window follow, tangent geometry)
 - `tests/memory-leak.test.ts`
 
 Run `npm test`. CI runs the suite when a `test` script is present.

@@ -3,25 +3,26 @@
  *
  * The "Charts" screen. A compact play area at the top, three quantity-vs-time charts
  * stacked below (each in a collapsible box with its own slider control and value-axis
- * zoom on the left), a shared time-axis zoom near the top-right, a record/playback
+ * zoom on the left), a shared time-axis zoom and a "Tangent Lines" toggle near the top-right
+ * (slope-of-x = v and slope-of-v = a, drawn at the cursor), a record/playback
  * transport at the bottom, and Reset All in the bottom-right corner.
  *
  * On every frame we ask the bamboo chart nodes to refresh from the latest series
  * values; the cursor inside each chart follows the model time automatically.
  */
 
-import { NumberProperty, type Property, type TReadOnlyProperty } from "scenerystack/axon";
+import { BooleanProperty, NumberProperty, type Property, type TReadOnlyProperty } from "scenerystack/axon";
 import { Range } from "scenerystack/dot";
 import { type EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import { HBox, Node, type TColor, Text, VBox } from "scenerystack/scenery";
 import { PhetFont, PlusMinusZoomButtonGroup, ResetAllButton } from "scenerystack/scenery-phet";
 import { ScreenView, type ScreenViewOptions } from "scenerystack/sim";
-import { AccordionBox } from "scenerystack/sun";
+import { AccordionBox, Checkbox } from "scenerystack/sun";
 import type { Tandem } from "scenerystack/tandem";
 import { FLAT_RESET_ALL_BUTTON_OPTIONS } from "../../common/MovingManButtonOptions.js";
 import type { DataSeries } from "../../common/model/DataSeries.js";
 import type { MovingManModel } from "../../common/model/MovingManModel.js";
-import { ChartNode, type ZoomLevel } from "../../common/view/ChartNode.js";
+import { ChartNode, type ChartTangentOptions, type ZoomLevel } from "../../common/view/ChartNode.js";
 import { FunctionComboBox } from "../../common/view/FunctionComboBox.js";
 import { MovingManScreenSummaryContent } from "../../common/view/MovingManScreenSummaryContent.js";
 import { addCollisionSounds } from "../../common/view/MovingManSounds.js";
@@ -60,6 +61,7 @@ type RowSpec = {
   series: DataSeries;
   titleStringProperty: TReadOnlyProperty<string>;
   timeZoomLevelProperty: NumberProperty;
+  tangent?: ChartTangentOptions;
 };
 
 type Row = {
@@ -98,6 +100,11 @@ export class ChartsScreenView extends ScreenView {
       range: new Range(0, MovingManConstants.TIME_ZOOM_LEVELS.length - 1),
     });
 
+    // View-only toggle for the tangent lines on the x and v charts.
+    const showTangentLinesProperty = new BooleanProperty(false);
+    const controlStrings = StringManager.getInstance().getControlStrings();
+    const a11yStrings = StringManager.getInstance().getA11yStrings();
+
     const positionRow = this.makeRow(model, {
       kind: "position",
       controlRange: MovingManConstants.POSITION_RANGE,
@@ -106,6 +113,12 @@ export class ChartsScreenView extends ScreenView {
       series: model.movingMan.positionGraphSeries,
       titleStringProperty: quantities.positionStringProperty,
       timeZoomLevelProperty,
+      // Slope of x(t) is v.
+      tangent: {
+        slopeSeries: model.movingMan.velocityGraphSeries,
+        visibleProperty: showTangentLinesProperty,
+        color: MovingManColors.velocityProperty,
+      },
     });
     const velocityRow = this.makeRow(model, {
       kind: "velocity",
@@ -115,6 +128,12 @@ export class ChartsScreenView extends ScreenView {
       series: model.movingMan.velocityGraphSeries,
       titleStringProperty: quantities.velocityStringProperty,
       timeZoomLevelProperty,
+      // Slope of v(t) is a.
+      tangent: {
+        slopeSeries: model.movingMan.accelerationGraphSeries,
+        visibleProperty: showTangentLinesProperty,
+        color: MovingManColors.accelerationProperty,
+      },
     });
     const accelerationRow = this.makeRow(model, {
       kind: "acceleration",
@@ -149,6 +168,20 @@ export class ChartsScreenView extends ScreenView {
       ],
     });
 
+    const tangentLinesCheckbox = new Checkbox(
+      showTangentLinesProperty,
+      new Text(controlStrings.tangentLinesStringProperty, {
+        font: ZOOM_LABEL_FONT,
+        fill: MovingManColors.foregroundColorProperty,
+      }),
+      {
+        boxWidth: 14,
+        checkboxColor: MovingManColors.foregroundColorProperty,
+        checkboxColorBackground: MovingManColors.panelFillProperty,
+        accessibleHelpText: a11yStrings.tangentLinesHelpTextStringProperty,
+      },
+    );
+
     const playbackControls = new PlaybackControls(model);
 
     // Preset position function chooser, bottom-left; its list opens upward.
@@ -157,6 +190,7 @@ export class ChartsScreenView extends ScreenView {
 
     const resetView = (): void => {
       timeZoomLevelProperty.reset();
+      showTangentLinesProperty.reset();
       for (const row of rows) {
         row.valueZoomLevelProperty.reset();
         row.expandedProperty.value = true;
@@ -171,7 +205,7 @@ export class ChartsScreenView extends ScreenView {
         resetView();
       },
       tandem: providedOptions.tandem.createTandem("resetAllButton"),
-      accessibleName: StringManager.getInstance().getA11yStrings().resetAllStringProperty,
+      accessibleName: a11yStrings.resetAllStringProperty,
     });
 
     // ── Layout ───────────────────────────────────────────────────────────────
@@ -183,6 +217,9 @@ export class ChartsScreenView extends ScreenView {
 
     timeZoomBox.right = layoutBounds.maxX - MARGIN;
     timeZoomBox.top = wallsCheckbox.bottom + 12;
+
+    tangentLinesCheckbox.right = layoutBounds.maxX - MARGIN;
+    tangentLinesCheckbox.top = timeZoomBox.bottom + 10;
 
     chartsColumn.left = layoutBounds.minX + MARGIN;
     chartsColumn.top = playArea.bottom + MARGIN;
@@ -200,6 +237,7 @@ export class ChartsScreenView extends ScreenView {
       playArea,
       wallsCheckbox,
       timeZoomBox,
+      tangentLinesCheckbox,
       chartsColumn,
       functionComboBox,
       playbackControls,
@@ -217,6 +255,7 @@ export class ChartsScreenView extends ScreenView {
     this.pdomControlAreaNode.pdomOrder = [
       wallsCheckbox,
       timeZoomBox,
+      tangentLinesCheckbox,
       functionComboBox,
       playbackControls,
       resetAllButton,
@@ -249,6 +288,7 @@ export class ChartsScreenView extends ScreenView {
       timeLevels: MovingManConstants.TIME_ZOOM_LEVELS,
       width: CHART_WIDTH,
       height: CHART_HEIGHT,
+      ...(spec.tangent && { tangent: spec.tangent }),
     });
     this.chartNodes.push(chart);
 

@@ -113,6 +113,10 @@ export class StringManager {
       p.cosineStringProperty,
       p.fastSineStringProperty,
       p.sqrtLinearStringProperty,
+      p.turnaroundStringProperty,
+      p.exponentialStringProperty,
+      p.dampedOscillationStringProperty,
+      p.cruiseBrakeStopStringProperty,
     ];
   }
 }

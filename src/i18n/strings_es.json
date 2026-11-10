@@ -28,8 +28,13 @@
       "sine": "7·sin(t)",
       "cosine": "7·cos(t)",
       "fastSine": "5·sin(2·t)",
-      "sqrtLinear": "√(20·t) − 10"
-    }
+      "sqrtLinear": "√(20·t) − 10",
+      "turnaround": "−2·t + 0.5·t²",
+      "exponential": "8 − 16·e^(−t/4)",
+      "dampedOscillation": "8·e^(−t/5)·cos(2·t)",
+      "cruiseBrakeStop": "Avanza, frena, se detiene"
+    },
+    "tangentLines": "Rectas tangentes"
   },
   "playback": {
     "record": "Grabar",
@@ -71,7 +76,8 @@
     "manPositionResponse": "{{position}} metros",
     "timeCursorHelpText": "En modo de reproducción, usa las flechas izquierda y derecha para recorrer la grabación. Inicio y Fin saltan a su comienzo y a su final.",
     "timeCursorResponse": "{{time}} segundos",
-    "restartClock": "Reiniciar el reloj"
+    "restartClock": "Reiniciar el reloj",
+    "tangentLinesHelpText": "Muestra una recta tangente a las gráficas de posición y velocidad en el cursor de tiempo. Su pendiente es igual al valor de la gráfica de abajo."
   },
   "keyboardHelp": {
     "manHeading": "Hombre en movimiento",
@@ -89,6 +95,7 @@
     "title": "Simulación",
     "wallsEnabled": "Paredes activadas",
     "showVelocityVector": "Mostrar vector de velocidad",
-    "showAccelerationVector": "Mostrar vector de aceleración"
+    "showAccelerationVector": "Mostrar vector de aceleración",
+    "elasticWalls": "Paredes elásticas (rebote)"
   }
 }

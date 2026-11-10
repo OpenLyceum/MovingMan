@@ -50,6 +50,31 @@ export class DataSeries {
   }
 
   /**
+   * The point whose time is closest to `time` (ties go to the earlier point), or null when empty.
+   * Assumes the series is in ascending time order, as every series in this sim is.
+   */
+  public getClosestPoint(time: number): DataPoint | null {
+    const data = this.data;
+    if (data.length === 0) {
+      return null;
+    }
+    let low = 0;
+    let high = data.length - 1;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if ((data[mid] as DataPoint).time < time) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    // low is the first point at or after `time`; its predecessor may be closer.
+    const after = data[low] as DataPoint;
+    const before = data[low - 1];
+    return before && time - before.time <= after.time - time ? before : after;
+  }
+
+  /**
    * Returns the right-of-center point. For [0,1,2,3,4] this is 2; for [0,1,2,3] it
    * is also 2. Matches PhET's behavior.
    */

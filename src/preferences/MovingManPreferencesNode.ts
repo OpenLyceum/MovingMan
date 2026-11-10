@@ -49,6 +49,7 @@ export class MovingManPreferencesNode extends VBox {
       children: [
         header,
         checkbox(preferencesModel.wallsEnabledProperty, prefStrings.wallsEnabledStringProperty, "wallsEnabledCheckbox"),
+        checkbox(preferencesModel.elasticWallsProperty, prefStrings.elasticWallsStringProperty, "elasticWallsCheckbox"),
         checkbox(
           preferencesModel.showVelocityVectorProperty,
           prefStrings.showVelocityVectorStringProperty,

@@ -34,11 +34,14 @@ const ZERO_THRESHOLD = 1e-6;
 /** What the man needs to know about the surrounding simulation. */
 export interface ManContext {
   readonly wallsEnabled: boolean;
+  /** When true, a slider-driven man bounces off a wall (v → −v) instead of stopping dead. */
+  readonly elasticWalls: boolean;
   readonly halfContainerWidth: number;
   isPaused(): boolean;
 }
 
 type WallResult = { position: number; collided: boolean };
+type WallBounce = { position: number; velocity: number };
 
 /** Snapshot of the man's instantaneous state, stored for playback. */
 export type ManState = {
@@ -226,38 +229,36 @@ export class MovingMan {
   }
 
   /**
-   * Drive position directly from a preset x(t), then differentiate to v and a using the
-   * same centered-derivative pipeline as pointer-driven motion (minus the smoothing).
+   * Drive position directly from a preset x(t). The preset knows its exact derivatives, so v and
+   * a are evaluated in closed form at the same instant as x — no numerical lag, so the three
+   * graphs line up exactly. While the man is pinned against a wall he is at rest (v = a = 0).
    */
   private updateFromFunction(time: number, preset: MovingManFunctionPreset): void {
     const previousPosition = this.positionProperty.value;
 
-    const position = this.clampIfWalled(preset.evaluate(time)).position;
-    // Feed the pointer-average window too, so dragging the man away from a running
-    // preset hands control back smoothly (matches the original's expression branch).
+    const wallResult = this.clampIfWalled(preset.evaluate(time));
+    const position = wallResult.position;
+    const velocity = wallResult.collided ? 0 : preset.velocity(time);
+    const acceleration = wallResult.collided ? 0 : preset.acceleration(time);
+
+    // Keep the rolling windows fed, so dragging the man away from a running preset (or switching
+    // to a slider) hands control back smoothly (matches the original's expression branch).
     this.mouseDataSeries.add(position, time);
     this.positionModelSeries.add(position, time);
-
-    // Differentiate position → velocity → acceleration.
-    this.velocityModelSeries.setData(this.estimatedCenteredDerivatives(this.positionModelSeries));
-    this.accelerationModelSeries.setData(this.estimatedCenteredDerivatives(this.velocityModelSeries));
-
-    const velocitySampleTime = this.getTimeNTimeStepsAgo(DERIVATIVE_RADIUS);
-    const accelerationSampleTime = this.getTimeNTimeStepsAgo(2 * DERIVATIVE_RADIUS);
+    this.velocityModelSeries.add(velocity, time);
+    this.accelerationModelSeries.add(acceleration, time);
 
     this.positionGraphSeries.add(position, time);
-    this.velocityGraphSeries.addPoint(this.getPointAtTime(this.velocityModelSeries, velocitySampleTime, time));
-    this.accelerationGraphSeries.addPoint(
-      this.getPointAtTime(this.accelerationModelSeries, accelerationSampleTime, time),
-    );
+    this.addGraphPoint(this.velocityGraphSeries, { value: velocity, time });
+    this.addGraphPoint(this.accelerationGraphSeries, { value: acceleration, time });
 
     this.positionProperty.value = position;
-    this.velocityProperty.value = this.snapToZero(this.velocityGraphSeries.getLastPoint()?.value ?? 0);
-    this.accelerationProperty.value = this.snapToZero(this.accelerationGraphSeries.getLastPoint()?.value ?? 0);
+    this.velocityProperty.value = this.snapToZero(velocity);
+    this.accelerationProperty.value = this.snapToZero(acceleration);
 
     this.setMousePosition(position);
 
-    if (!this.hitsWall(previousPosition) && this.hitsWall(this.positionProperty.value)) {
+    if (!this.hitsWall(previousPosition) && this.hitsWall(position)) {
       this.collideEmitter.emit();
     }
   }
@@ -279,28 +280,26 @@ export class MovingMan {
     const x = positions.length > 0 ? sum / positions.length : 0;
     const position = this.clampIfWalled(x).position;
     this.positionModelSeries.add(position, time);
+    this.positionGraphSeries.add(position, time);
 
     // Differentiate position → velocity → acceleration.
     this.velocityModelSeries.setData(this.estimatedCenteredDerivatives(this.positionModelSeries));
     this.accelerationModelSeries.setData(this.estimatedCenteredDerivatives(this.velocityModelSeries));
 
-    // Read each derivative at its most-recent *fully centered* sample, where the
-    // least-squares window is symmetric (and so smoothest / least jittery): velocity
-    // DERIVATIVE_RADIUS steps back, acceleration twice that. The values are restamped with
-    // the current time so the graphs still line up with "now"; the cost is a readout lag of
-    // ~2*RADIUS*dt on acceleration. See DERIVATIVE_RADIUS in MovingManConstants.
-    const velocitySampleTime = this.getTimeNTimeStepsAgo(DERIVATIVE_RADIUS);
-    const accelerationSampleTime = this.getTimeNTimeStepsAgo(2 * DERIVATIVE_RADIUS);
-
-    this.positionGraphSeries.add(position, time);
-    this.velocityGraphSeries.addPoint(this.getPointAtTime(this.velocityModelSeries, velocitySampleTime, time));
-    this.accelerationGraphSeries.addPoint(
-      this.getPointAtTime(this.accelerationModelSeries, accelerationSampleTime, time),
+    // Read each derivative at its most-recent *fully centered* sample, where the least-squares
+    // window is symmetric (and so smoothest / least jittery): velocity DERIVATIVE_RADIUS steps
+    // back, acceleration twice that. Each graph point keeps that sample's own time, so the v and
+    // a graphs stay aligned with x (their lines just end a little before the cursor).
+    const velocity = this.addDerivativeSample(this.velocityGraphSeries, this.velocityModelSeries, DERIVATIVE_RADIUS);
+    const acceleration = this.addDerivativeSample(
+      this.accelerationGraphSeries,
+      this.accelerationModelSeries,
+      2 * DERIVATIVE_RADIUS,
     );
 
     this.positionProperty.value = position;
-    this.velocityProperty.value = this.snapToZero(this.velocityGraphSeries.getLastPoint()?.value ?? 0);
-    this.accelerationProperty.value = this.snapToZero(this.accelerationGraphSeries.getLastPoint()?.value ?? 0);
+    this.velocityProperty.value = this.snapToZero(velocity);
+    this.accelerationProperty.value = this.snapToZero(acceleration);
 
     if (!this.hitsWall(previousPosition) && this.hitsWall(this.positionProperty.value)) {
       this.collideEmitter.emit();
@@ -312,27 +311,36 @@ export class MovingMan {
     this.mouseDataSeries.clear();
 
     const velocity = this.velocityProperty.value;
+    const wallResult = this.clampIfWalled(this.positionProperty.value + velocity * delta);
+
+    if (wallResult.collided) {
+      // Inelastic: stop dead. Elastic: reverse. Either way the impact is recorded cleanly (no
+      // differentiated acceleration spike), the same as in acceleration mode.
+      if (this.context.elasticWalls) {
+        const bounce = this.bounceOffWall(wallResult.position, velocity, 0, delta);
+        this.recordWallImpact(time, bounce.position, bounce.velocity, 0);
+      } else {
+        this.recordWallImpact(time, wallResult.position, 0, 0);
+      }
+      return;
+    }
+
     this.velocityModelSeries.add(velocity, time);
     this.velocityGraphSeries.add(velocity, time);
 
     this.accelerationModelSeries.setData(this.estimatedCenteredDerivatives(this.velocityModelSeries));
-    const accelerationSampleTime = this.getTimeNTimeStepsAgo(DERIVATIVE_RADIUS);
-    this.accelerationGraphSeries.addPoint(
-      this.getPointAtTime(this.accelerationModelSeries, accelerationSampleTime, time),
+    const acceleration = this.addDerivativeSample(
+      this.accelerationGraphSeries,
+      this.accelerationModelSeries,
+      DERIVATIVE_RADIUS,
     );
 
-    const wallResult = this.clampIfWalled(this.positionProperty.value + velocity * delta);
     this.positionModelSeries.add(wallResult.position, time);
     this.positionGraphSeries.add(wallResult.position, time);
 
     this.setMousePosition(wallResult.position);
     this.positionProperty.value = wallResult.position;
-    this.accelerationProperty.value = this.snapToZero(this.accelerationGraphSeries.getLastPoint()?.value ?? 0);
-
-    if (wallResult.collided) {
-      this.velocityProperty.value = 0;
-      this.collideEmitter.emit();
-    }
+    this.accelerationProperty.value = this.snapToZero(acceleration);
   }
 
   private updateFromAcceleration(time: number, delta: number): void {
@@ -344,26 +352,16 @@ export class MovingMan {
     const wallResult = this.clampIfWalled(this.positionProperty.value + estVelocity * delta);
 
     if (wallResult.collided) {
-      // Stop at the wall: record zero velocity and the wall position directly so the
-      // chart series have no spike. Zero acceleration too, then switch to velocity-driven
-      // so subsequent steps hold the man still until the user moves a slider.
-      const pos = wallResult.position;
-      this.setVelocityDriven();
-
-      this.accelerationModelSeries.add(acceleration, time);
-      this.accelerationGraphSeries.add(acceleration, time);
-      this.accelerationProperty.value = 0;
-
-      this.velocityModelSeries.add(0, time);
-      this.velocityGraphSeries.add(0, time);
-      this.velocityProperty.value = 0;
-
-      this.positionModelSeries.add(pos, time);
-      this.positionGraphSeries.add(pos, time);
-      this.positionProperty.value = pos;
-      this.setMousePosition(pos);
-
-      this.collideEmitter.emit();
+      if (this.context.elasticWalls) {
+        // Bounce: reverse the velocity and keep accelerating (a ball bouncing under gravity).
+        const bounce = this.bounceOffWall(wallResult.position, this.velocityProperty.value, acceleration, delta);
+        this.recordWallImpact(time, bounce.position, bounce.velocity, acceleration);
+      } else {
+        // Stop at the wall, zero the acceleration too, then switch to velocity-driven so
+        // subsequent steps hold the man still until the user moves a slider.
+        this.setVelocityDriven();
+        this.recordWallImpact(time, wallResult.position, 0, 0);
+      }
       return;
     }
 
@@ -378,6 +376,64 @@ export class MovingMan {
     this.setMousePosition(wallResult.position);
     this.positionProperty.value = wallResult.position;
     this.velocityProperty.value = newVelocity;
+  }
+
+  /**
+   * Record a slider-driven wall impact at `time`: the man ends the step at `position` with the
+   * given post-impact velocity and acceleration. The velocity/acceleration derivative windows
+   * restart from the impact, so the instantaneous change of velocity does not show up as a
+   * differentiated acceleration spike in later steps. Fires collideEmitter.
+   */
+  private recordWallImpact(time: number, position: number, velocity: number, acceleration: number): void {
+    this.velocityModelSeries.setData([{ value: velocity, time }]);
+    this.accelerationModelSeries.setData([{ value: acceleration, time }]);
+
+    this.positionModelSeries.add(position, time);
+    this.positionGraphSeries.add(position, time);
+    this.addGraphPoint(this.velocityGraphSeries, { value: velocity, time });
+    this.addGraphPoint(this.accelerationGraphSeries, { value: acceleration, time });
+
+    this.positionProperty.value = position;
+    this.velocityProperty.value = velocity;
+    this.accelerationProperty.value = acceleration;
+    this.setMousePosition(position);
+
+    this.collideEmitter.emit();
+  }
+
+  /**
+   * Elastic bounce within one step, exact for constant acceleration: find the moment τ in the
+   * step when x + v₀τ + ½aτ² reaches the wall, reverse the velocity there, and move on for the
+   * rest of the step. (Simply mirroring the overshoot would let the man keep accelerating
+   * "through" the wall and gain energy on every bounce.)
+   *
+   * @param wallPosition - the wall being hit
+   * @param v0 - velocity at the start of the step
+   * @param a - constant acceleration during the step
+   * @param delta - step length
+   */
+  private bounceOffWall(wallPosition: number, v0: number, a: number, delta: number): WallBounce {
+    const gap = wallPosition - this.positionProperty.value;
+    let tau = delta;
+    if (Math.abs(a) < 1e-12) {
+      if (v0 !== 0) {
+        tau = gap / v0;
+      }
+    } else {
+      // ½aτ² + v₀τ − gap = 0; take the earliest root inside the step.
+      const discriminant = Math.max(0, v0 * v0 + 2 * a * gap);
+      const sqrt = Math.sqrt(discriminant);
+      const roots = [(-v0 + sqrt) / a, (-v0 - sqrt) / a].filter((r) => r >= 0 && r <= delta + 1e-12);
+      tau = roots.length > 0 ? Math.min(...roots) : delta;
+    }
+    tau = Math.min(Math.max(tau, 0), delta);
+
+    const rest = delta - tau;
+    const velocityAfterImpact = -(v0 + a * tau);
+    return {
+      position: this.clampIfWalled(wallPosition + velocityAfterImpact * rest + 0.5 * a * rest * rest).position,
+      velocity: velocityAfterImpact + a * rest,
+    };
   }
 
   // ── Pointer input ─────────────────────────────────────────────────────────────
@@ -426,6 +482,11 @@ export class MovingMan {
     return { position: x, collided: false };
   }
 
+  /**
+   * Whether x sits exactly on a wall. Exact float equality is intentional: clampIfWalled returns
+   * the wall coordinate itself, so a clamped man is *exactly* ±halfContainerWidth. A tolerance
+   * here would also fire for a man standing just inside the wall, emitting duplicate collisions.
+   */
   private hitsWall(x: number): boolean {
     if (!this.context.wallsEnabled) {
       return false;
@@ -440,18 +501,43 @@ export class MovingMan {
   }
 
   /**
-   * Look up the point in `series` whose time equals lookupTime, returning a copy
-   * stamped with reportedTime. If no exact match exists (shouldn't happen with the
-   * fixed timestep), fall back to the most recent point.
+   * Look up the point in `series` at `lookupTime` (within half a step), or null if there is none.
    */
-  private getPointAtTime(series: DataSeries, lookupTime: number, reportedTime: number): DataPoint {
-    for (let i = 0; i < series.size(); i++) {
+  private getPointAtTime(series: DataSeries, lookupTime: number): DataPoint | null {
+    for (let i = series.size() - 1; i >= 0; i--) {
       const point = series.getPoint(i);
       if (point && Math.abs(point.time - lookupTime) < FIXED_DT * 0.5) {
-        return { value: point.value, time: reportedTime };
+        return { value: point.value, time: point.time };
       }
     }
-    return { value: series.getLastPoint()?.value ?? 0, time: reportedTime };
+    return null;
+  }
+
+  /**
+   * Take the derivative estimate `stepsAgo` steps back from `modelSeries`, add it to
+   * `graphSeries` at that sample's own time (see addGraphPoint), and return its value for the
+   * live readout (0 if there is no sample yet).
+   */
+  private addDerivativeSample(graphSeries: DataSeries, modelSeries: DataSeries, stepsAgo: number): number {
+    const point = this.getPointAtTime(modelSeries, this.getTimeNTimeStepsAgo(stepsAgo));
+    if (!point) {
+      return modelSeries.getLastPoint()?.value ?? 0;
+    }
+    this.addGraphPoint(graphSeries, point);
+    return point.value;
+  }
+
+  /**
+   * Append to a graph series only if the point is later than its last one. Derivative samples are
+   * stamped with their (lagged) centered time, so right after a reset, a strategy switch or a wall
+   * impact the candidate time can repeat or fall behind points already plotted; those are dropped
+   * so every graph series stays strictly increasing in time.
+   */
+  private addGraphPoint(graphSeries: DataSeries, point: DataPoint): void {
+    const last = graphSeries.getLastPoint();
+    if (!last || point.time > last.time + FIXED_DT * 0.5) {
+      graphSeries.addPoint(point);
+    }
   }
 
   /** Centered least-squares derivative of every point in the series. */
@@ -470,11 +556,13 @@ export class MovingMan {
     return points;
   }
 
+  /**
+   * The step time `n` steps before the latest one. While fewer than n+1 steps have been taken
+   * since the history was (re)started, this is the oldest remembered time, so the lagged sample
+   * time never runs ahead of the true centered time.
+   */
   private getTimeNTimeStepsAgo(n: number): number {
-    let index = this.times.length - 1 - n;
-    if (index < 0) {
-      index = this.times.length - 1;
-    }
+    const index = Math.max(0, this.times.length - 1 - n);
     return this.times[index] ?? this.time;
   }
 }

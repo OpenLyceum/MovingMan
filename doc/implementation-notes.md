@@ -46,17 +46,33 @@ Data flows Model → View through AXON `Property` objects and `DataSeries` emitt
 - **Fixed timestep accumulator.** `FIXED_DT = 1/24 s`, `MAX_CATCHUP_STEPS = 10`. Playback
   multiplies wall-clock dt by `playbackSpeedProperty` but each integration slice still uses
   `FIXED_DT` so derivatives stay stable.
-- **Strategy determines derivation direction.** See `MovingMan.updateFromStrategy`:
-  position-driven → `estimateCenteredDerivatives` on model series; velocity-driven → integrate x,
-  differentiate a; acceleration-driven → integrate v and x. `snapToZero` clears residuals below
+- **Strategy determines derivation direction.** See `MovingMan.dispatchUpdate`:
+  position-driven → `estimatedCenteredDerivatives` on model series; velocity-driven → integrate
+  x, differentiate a; acceleration-driven → integrate v and x. `snapToZero` clears residuals below
   `1e-6` so a parked man reads exactly 0.
-- **Walls.** `clampIfWalled` clamps x to ±`HALF_CONTAINER_WIDTH`; on collision velocity → 0 and
-  `collideEmitter` fires → `MovingManSounds.addCollisionSounds`.
+- **Derived graph points keep their own time.** A centered derivative is only available
+  `DERIVATIVE_RADIUS` steps back (2× for a). `addDerivativeSample` plots it at that sample time —
+  not restamped to "now" — so x, v and a line up on the charts; the live read-out shows the same
+  (lagged) value. `addGraphPoint` drops any candidate that is not later than the series' last
+  point, keeping every graph series strictly increasing across resets, strategy switches and
+  wall impacts.
+- **Walls.** `clampIfWalled` clamps x to ±`HALF_CONTAINER_WIDTH`. Slider-driven impacts go
+  through `recordWallImpact`, which restarts the v/a derivative windows at the impact so no
+  differentiated spike appears; inelastic → v = 0 (acceleration mode also switches to
+  velocity-driven), elastic (`elasticWallsProperty`) → `bounceOffWall` solves for the impact time
+  inside the step and reverses v there (exact for constant a, so bounces conserve energy).
+  `collideEmitter` fires → `MovingManSounds.addCollisionSounds`. `hitsWall` uses exact float
+  equality on purpose (clamped positions are exactly the wall coordinate).
+- **Playback leaves the walls alone.** History records hold only time + `ManState`; the walls
+  toggle is a live setting (also a preference) and is not overwritten during playback.
 - **x(t) presets replace formula entry.** `functionProperty` non-null overrides the motion
   strategy; selecting a preset resets time/history and auto-plays. Drag/slider interaction clears
-  the preset.
-- **Derivative tuning.** `DERIVATIVE_RADIUS = 3` (widened from PhET's 1) trades ~250 ms
-  acceleration lag for smoother hand-drag readouts — documented in `MovingManConstants.ts`.
+  the preset. Each preset carries exact `velocity` / `acceleration` functions, used instead of
+  numerical differentiation (no lag); the derivative windows are still fed so handing control
+  back to drag/sliders is smooth.
+- **Derivative tuning.** `DERIVATIVE_RADIUS = 3` (widened from PhET's 1) trades read-out lag
+  (~125 ms v, ~250 ms a) for smoother hand-drag readouts. `SERIES_SIZE_LIMIT` (4R+1) and
+  `NUM_TIME_POINTS_TO_RECORD` (4R) are derived from it in `MovingManConstants.ts`.
 - **Nested constants.** `src/MovingManConstants.ts` (fleet carve-out).
 
 ## View components
@@ -68,7 +84,9 @@ Data flows Model → View through AXON `Property` objects and `DataSeries` emitt
 - **PlayAreaNode** — ruler, wall graphics, bounds.
 - **MovingManSpriteNode** — sprite sheet walking animation; lean on wall collision.
 - **ChartNode** — bamboo chart with zoom; reads `MovingMan.*GraphSeries`. When zoomed in on
-  time, the window slides to keep the cursor in view (`timeWindowStart`).
+  time, the window slides to keep the cursor in view (`timeWindowStart`). Optional dashed tangent
+  line at the cursor (`tangentSegment`), slope read from the next series down; toggled by the
+  Charts screen's "Tangent Lines" checkbox (view state, reset by Reset All).
 - **MovingManSounds** — registers collision clips with sound manager.
 
 ## Disposal conventions
@@ -80,8 +98,13 @@ add/remove. Fleet memory-leak suite uses a minimal dispose pattern (see `tests/m
 
 `npm test` (vitest):
 
-- `tests/common/model/MovingManModel.test.ts` — acceleration-mode integration, reset, wall
-  collision when enabled
+- `tests/common/model/MovingManModel.test.ts` — screen-level stepping, record/playback, presets,
+  preferences, walls
+- `tests/common/model/kinematics.test.ts` — closed-form checks: x = ½at², exact preset
+  derivatives, x/v/a graph alignment, monotonic timestamps, wall impacts (inelastic and elastic)
+- `tests/common/model/{motionMath,binarySearch,DataSeries,functionPresets}.test.ts` — unit tests
+  for the numerics, buffers and presets (incl. which presets reach a wall and when)
+- `tests/common/view/ChartNode.test.ts` — time-window follow and tangent geometry
 - `tests/memory-leak.test.ts` — WeakRef/GC regression suite
 
 CI also runs `npm run lint && npm run check && npm run build`.

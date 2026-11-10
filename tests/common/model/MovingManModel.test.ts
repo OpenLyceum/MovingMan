@@ -208,7 +208,7 @@ describe("MovingManModel", () => {
     expect(model.movingMan.positionProperty.value).toBeCloseTo(7 * Math.cos(FIXED_DT), 9);
   });
 
-  it("velocity mode aligns acceleration timestamps with model time and keeps them monotonic", () => {
+  it("velocity mode stamps acceleration at its centered sample time and keeps timestamps monotonic", () => {
     model = new MovingManModel();
     model.movingMan.setVelocityDriven();
     model.movingMan.velocityProperty.value = 3;
@@ -218,12 +218,15 @@ describe("MovingManModel", () => {
       model.step(FIXED_DT);
     }
 
+    // The acceleration is a centered derivative of the velocity, so its newest point is
+    // DERIVATIVE_RADIUS steps behind the cursor (and the first RADIUS steps add no new point).
+    const radius: number = MovingManConstants.DERIVATIVE_RADIUS;
     const accelSeries = model.movingMan.accelerationGraphSeries;
-    expect(accelSeries.size()).toBe(20);
+    expect(accelSeries.size()).toBe(20 - radius);
 
     const lastPoint = accelSeries.getLastPoint();
     expect(lastPoint).not.toBeNull();
-    expect(lastPoint?.time).toBeCloseTo(model.timeProperty.value, 6);
+    expect(lastPoint?.time).toBeCloseTo(model.timeProperty.value - radius * FIXED_DT, 6);
 
     // Timestamps must be strictly monotonically increasing.
     for (let i = 1; i < accelSeries.size(); i++) {

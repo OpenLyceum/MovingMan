@@ -10,6 +10,10 @@
  * level are passed in as integer NumberProperties; changing either rescales the
  * transform and the tick/grid spacing for that axis. When zoomed in on time, the visible
  * window slides to keep the playback cursor in view (see timeWindowStart).
+ *
+ * Optionally the chart draws a tangent line at the cursor whose slope is read from another
+ * series (the next derivative down: v on the x chart, a on the v chart), making "the slope of
+ * this graph is the value on the next one" visible directly.
  */
 
 import { type NumberProperty, PatternStringProperty, type TReadOnlyProperty } from "scenerystack/axon";
@@ -50,6 +54,14 @@ const GRID_LINE_WIDTH = 0.5;
 // Model-time scrub speed (seconds per view-pixel of keyboard drag).
 const SCRUB_PER_PX = 0.02;
 
+// Half-length of the tangent line, as a fraction of the visible time window.
+const TANGENT_HALF_SPAN_FRACTION = 0.12;
+const TANGENT_LINE_WIDTH = 2;
+const TANGENT_LINE_DASH = [6, 4];
+// The tangent is hidden when no slope sample lies within this many seconds of the cursor
+// (e.g. before anything has been recorded).
+const TANGENT_MAX_TIME_GAP = 0.5;
+
 // Once the cursor passes this fraction of a zoomed-in time window, the window slides along with it.
 const TIME_FOLLOW_FRACTION = 0.9;
 
@@ -65,6 +77,39 @@ export function timeWindowStart(t: number, span: number, maxTime: number): numbe
 /** One zoom level: axis extent `max` and tick/grid `step`, both in model units. */
 export type ZoomLevel = { readonly max: number; readonly step: number };
 
+/** A tangent line drawn at the cursor, with its slope taken from `slopeSeries`. */
+export type ChartTangentOptions = {
+  slopeSeries: DataSeries;
+  visibleProperty: TReadOnlyProperty<boolean>;
+  color: TColor;
+};
+
+/**
+ * Endpoints (model coordinates) of the tangent line at the cursor time `t`: anchored at the slope
+ * sample closest to `t` (its own time, so the line touches the curve even while the derivative
+ * readout trails the cursor during recording), through the value series' point at that time.
+ * Returns null when either series has no sample near `t`.
+ */
+export function tangentSegment(
+  series: DataSeries,
+  slopeSeries: DataSeries,
+  t: number,
+  halfSpan: number,
+): { x1: number; y1: number; x2: number; y2: number } | null {
+  const slopePoint = slopeSeries.getClosestPoint(t);
+  if (!slopePoint || Math.abs(slopePoint.time - t) > TANGENT_MAX_TIME_GAP) {
+    return null;
+  }
+  const valuePoint = series.getClosestPoint(slopePoint.time);
+  if (!valuePoint || Math.abs(valuePoint.time - slopePoint.time) > TANGENT_MAX_TIME_GAP) {
+    return null;
+  }
+  const t0 = valuePoint.time;
+  const y0 = valuePoint.value;
+  const m = slopePoint.value;
+  return { x1: t0 - halfSpan, y1: y0 - m * halfSpan, x2: t0 + halfSpan, y2: y0 + m * halfSpan };
+}
+
 export type ChartNodeOptions = {
   series: DataSeries;
   color: TColor;
@@ -77,6 +122,8 @@ export type ChartNodeOptions = {
   /** Total width and height in px of the ChartNode (including tick-label insets). */
   width: number;
   height: number;
+  /** Optional tangent line at the cursor. */
+  tangent?: ChartTangentOptions;
 };
 
 export class ChartNode extends Node {
@@ -84,6 +131,8 @@ export class ChartNode extends Node {
   private readonly series: DataSeries;
   private readonly linePlot: LinePlot;
   private readonly cursorLine: Line;
+  private readonly tangentLine: Line | null;
+  private readonly tangent: ChartTangentOptions | null;
   private readonly dataset: Vector2[] = [];
   private datasetSize = 0;
   private readonly timeProperty: TReadOnlyProperty<number>;
@@ -165,6 +214,17 @@ export class ChartNode extends Node {
       lineWidth: CURSOR_LINE_WIDTH,
       cursor: "ew-resize",
     });
+    this.tangent = options.tangent ?? null;
+    this.tangentLine = this.tangent
+      ? new Line(0, 0, 0, 0, {
+          stroke: this.tangent.color,
+          lineWidth: TANGENT_LINE_WIDTH,
+          lineDash: TANGENT_LINE_DASH,
+          pickable: false,
+          visible: false,
+        })
+      : null;
+
     timeProperty.link(() => this.updateCursor());
 
     // The plot area is offset inside the ChartNode by the tick insets.
@@ -183,7 +243,9 @@ export class ChartNode extends Node {
         // constrains bounds — stretch this node's bounds and the surrounding layout.
         new Node({
           clipArea: Shape.bounds(chartRectangle.bounds),
-          children: [this.linePlot, this.cursorLine],
+          children: this.tangentLine
+            ? [this.linePlot, this.tangentLine, this.cursorLine]
+            : [this.linePlot, this.cursorLine],
         }),
         yTickMarks,
         yTickLabels,
@@ -286,6 +348,10 @@ export class ChartNode extends Node {
     // Refresh the line whenever the model series may have changed.
     model.movingMan.historyClearedEmitter.addListener(() => this.refresh());
 
+    // Redraw the tangent when it is toggled or the axes rescale.
+    this.tangent?.visibleProperty.link(() => this.updateTangent());
+    chartTransform.changedEmitter.addListener(() => this.updateTangent());
+
     // Make sure the (initially-empty) line plot is positioned correctly.
     this.refresh();
   }
@@ -301,6 +367,30 @@ export class ChartNode extends Node {
     const x = this.chartTransform.modelToViewX(t);
     this.cursorLine.x1 = x;
     this.cursorLine.x2 = x;
+    this.updateTangent();
+  }
+
+  /** Position (or hide) the tangent line at the current cursor time. */
+  private updateTangent(): void {
+    const line = this.tangentLine;
+    const tangent = this.tangent;
+    if (!(line && tangent)) {
+      return;
+    }
+    const segment = tangent.visibleProperty.value
+      ? tangentSegment(
+          this.series,
+          tangent.slopeSeries,
+          this.timeProperty.value,
+          TANGENT_HALF_SPAN_FRACTION * this.timeSpan,
+        )
+      : null;
+    line.visible = segment !== null;
+    if (segment) {
+      const p1 = this.chartTransform.modelToViewXY(segment.x1, segment.y1);
+      const p2 = this.chartTransform.modelToViewXY(segment.x2, segment.y2);
+      line.setLine(p1.x, p1.y, p2.x, p2.y);
+    }
   }
 
   /**
@@ -339,6 +429,7 @@ export class ChartNode extends Node {
     }
     this.datasetSize = size;
     this.linePlot.setDataSet(this.dataset);
+    this.updateTangent();
   }
 
   /** Pixel width of the inner plot area (handy for siblings that want to align). */
