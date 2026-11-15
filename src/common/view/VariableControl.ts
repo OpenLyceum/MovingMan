@@ -37,7 +37,7 @@ const NUMBER_CONTROL_DELTA = 0.1;
 export type VariableControlKind = "position" | "velocity" | "acceleration";
 
 /** Where the vector-visibility checkbox sits relative to the slider. */
-export type VectorCheckboxPlacement = "below" | "right";
+type VectorCheckboxPlacement = "below" | "right";
 
 export type VariableControlOptions = {
   kind: VariableControlKind;
