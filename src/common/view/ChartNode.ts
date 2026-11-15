@@ -69,6 +69,7 @@ const TIME_FOLLOW_FRACTION = 0.9;
  * Start of the visible time window of width `span` that keeps time `t` in view: fixed at 0
  * until `t` passes TIME_FOLLOW_FRACTION of the window, then sliding with `t`, but never
  * past the end of the recordable range [0, maxTime].
+ * @internal Exported for unit tests; not part of the application API.
  */
 export function timeWindowStart(t: number, span: number, maxTime: number): number {
   return Math.max(0, Math.min(t - TIME_FOLLOW_FRACTION * span, maxTime - span));
@@ -89,6 +90,7 @@ export type ChartTangentOptions = {
  * sample closest to `t` (its own time, so the line touches the curve even while the derivative
  * readout trails the cursor during recording), through the value series' point at that time.
  * Returns null when either series has no sample near `t`.
+ * @internal Exported for unit tests; not part of the application API.
  */
 export function tangentSegment(
   series: DataSeries,
