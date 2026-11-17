@@ -20,13 +20,9 @@ import { ChartNode } from "../src/common/view/ChartNode.js";
 import MovingManColors from "../src/MovingManColors.js";
 import MovingManConstants from "../src/MovingManConstants.js";
 import { MovingManPreferencesModel } from "../src/preferences/MovingManPreferencesModel.js";
-import { describeDisposalLeaks, forceGC } from "./helpers/memoryLeak.js";
+import { describeDisposalLeaks, forceGC, listenerCount } from "./helpers/memoryLeak.js";
 
 const FIXED_DT: number = MovingManConstants.FIXED_DT;
-
-/** Listener count of a Property (public at runtime, private in the type declarations). */
-const listenerCount = (property: object): number =>
-  (property as unknown as { getListenerCount(): number }).getListenerCount();
 
 function createAndDropModel(): WeakRef<object> {
   const model = new MovingManModel({ noRecording: true });
@@ -226,4 +222,4 @@ describe("driving the model does not accumulate listeners", () => {
   });
 });
 
-describeDisposalLeaks([]);
+describeDisposalLeaks([], { emptyOk: "views are isDisposable:false; custom forceGC + listenerCount coverage below" });
