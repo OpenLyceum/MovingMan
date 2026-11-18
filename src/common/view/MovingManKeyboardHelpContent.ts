@@ -9,6 +9,8 @@
  * strings KeyboardDragListener actually registers. No second listener is added.
  * The Charts screen adds a section for the graph time cursor (ChartNode): left/right
  * scrub through the recording, Home/End jump to its start and end.
+ * Both screens have a PlayPauseButton (Intro directly, Charts inside TimeControlNode),
+ * whose global Alt+K toggle TimeControlsKeyboardHelpSection documents.
  */
 
 import { HotkeyData } from "scenerystack/scenery";
@@ -18,6 +20,7 @@ import {
   KeyboardHelpSection,
   KeyboardHelpSectionRow,
   SliderControlsKeyboardHelpSection,
+  TimeControlsKeyboardHelpSection,
   TwoColumnKeyboardHelpContent,
 } from "scenerystack/scenery-phet";
 import { StringManager } from "../../i18n/StringManager.js";
@@ -69,7 +72,7 @@ export class MovingManKeyboardHelpContent extends TwoColumnKeyboardHelpContent {
 
     const leftSections = [new SliderControlsKeyboardHelpSection(), new ComboBoxKeyboardHelpSection(), man];
 
-    const rightSections: KeyboardHelpSection[] = [];
+    const rightSections: KeyboardHelpSection[] = [new TimeControlsKeyboardHelpSection()];
     if (options?.includeChartCursor) {
       rightSections.push(
         new KeyboardHelpSection(keyboardHelpStrings.chartHeadingStringProperty, [
