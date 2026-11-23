@@ -13,6 +13,7 @@
  */
 
 import { Tandem } from "scenerystack/tandem";
+import { vi } from "vitest";
 import { ChartsScreen } from "../../src/charts/ChartsScreen.js";
 import { StringManager } from "../../src/i18n/StringManager.js";
 import { IntroScreen } from "../../src/intro/IntroScreen.js";
@@ -21,6 +22,10 @@ import { MovingManPreferencesModel } from "../../src/preferences/MovingManPrefer
 import { describeHeadlessSoak } from "../helpers/headlessSoak.js";
 
 function buildSim() {
+  // MovingManSounds fetches its clips from the Vite dev server, which the soak doesn't run.
+  // Leave the fetch pending so the clips stay silent instead of warning on every load.
+  vi.stubGlobal("fetch", () => new Promise<Response>(() => undefined));
+
   const stringManager = StringManager.getInstance();
   const screenNames = stringManager.getScreenNames();
 
