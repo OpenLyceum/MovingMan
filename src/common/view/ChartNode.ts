@@ -26,7 +26,7 @@ import {
   TickLabelSet,
   TickMarkSet,
 } from "scenerystack/bamboo";
-import { Range, toFixed, Vector2 } from "scenerystack/dot";
+import { Range, roundSymmetric, toFixed, Vector2 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Orientation } from "scenerystack/phet-core";
 import { KeyboardListener, Line, Node, RichDragListener, type TColor, Text } from "scenerystack/scenery";
@@ -441,7 +441,7 @@ export class ChartNode extends Node {
 
   /** A neat short label for tick values (e.g. avoid "-0", drop trailing zeros). */
   private static formatTickValue(value: number): string {
-    const rounded = Math.round(value * 100) / 100;
+    const rounded = roundSymmetric(value * 100) / 100;
     if (rounded === 0) {
       return "0";
     }
